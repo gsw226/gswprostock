@@ -16,18 +16,27 @@ def stock_name_to_code(stock_name):
             return code
     else:
         return 0
-# def sell:
+def right(upper,lower,sma5,sma100):
+    boll = int(input('볼린저가 수렴했나요?(수렴했으면1 안햇으면0)'))
+    if boll == 1:
+        buy(upper,lower,sma5,sma100)
+    else:
+        sell(upper,lower,sma5,sma100)
+def op(upper,lower,sma5,sma100):
+    if sma5 >
+
+def sell(upper,lower,sma5,sma100):
+    for a,i in enumerate(sma5):
+        for b,j in enumerate(sma100):
+            
 # def buy:  
-def right_or_op(upper,sma5,sma100):
-    print(type(sma5))
-    # for i in sma5:
-    #     for j in sma100:
-    #         if i == j:
-                
-    #         elif i > j:
-    #             sell()
-    #         elif i < j:
-    #             buy()
+def right_or_op(upper,lower,sma 5,sma100):
+    for a,i in enumerate(sma5):
+        for b,j in enumerate(sma100):
+            if i > j:
+                right(upper,lower,sma5,sma100)
+            elif i < j:
+                op(upper,lower,sma5,sma100)
 
 
 pd.set_option('display.max_columns', None)
@@ -77,7 +86,12 @@ df['stddev'] = sort_df['close'].rolling(window=20).std()
 sort_df['upper'] = sort_df['sma20'] + (df['stddev']*2)
 sort_df['lower'] = sort_df['sma20'] - (df['stddev']*2)
 
-right_or_op(sort_df['upper'],sort_df['sma5'],sort_df['sma100']):
+sma5_list = sort_df['sma5'].tolist()
+sma100_list = sort_df['sma100'].tolist()
+upper_list = sort_df['upper'].tolist()
+lower_list = sort_df['lower'].tolist()
+
+right_or_op(upper_list,lower_list,sma5_list,sma100_list)
 
 sma5 = mpf.make_addplot(sort_df['sma5'],type='line',color = 'r', width=1, alpha=0.5)
 sma20 = mpf.make_addplot(sort_df['sma20'],type='line',color = 'b', width=1, alpha=0.5)
