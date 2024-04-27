@@ -22,8 +22,11 @@ def right(upper,lower,sma5,sma100):
         buy(upper,lower,sma5,sma100)
     else:
         sell(upper,lower,sma5,sma100)
-def op(upper,lower,sma5,sma100):
-    if sma5 >
+def op_sell(upper,lower,sma5,sma100):
+    if sma5 < sma100:
+        sell(upper,lower,sma5,sma100)
+        if sma5 < lower:
+            sell
 
 def sell(upper,lower,sma5,sma100):
     for a,i in enumerate(sma5):
