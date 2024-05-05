@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_file
+from flask import Flask, render_template, send_file,request
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
@@ -28,6 +28,7 @@ def crawling():
         table = pd.read_html(str(html_table))
         df = pd.concat([df, table[0].dropna()])
     return df
+
 def sum(df):
     df = df.reset_index(drop=True)
     df.drop(columns=['전일비'], inplace=True)
@@ -50,6 +51,8 @@ def sum(df):
     sort_df['upper'] = sort_df['sma20'] + (sort_df['stddev']*2)
     sort_df['lower'] = sort_df['sma20'] - (sort_df['stddev']*2)
     return sort_df
+
+    
 def make_plt(df,sort_df):
     sma5 = mpf.make_addplot(sort_df['sma5'],type='line',color = 'r', width=1, alpha=0.5)
     sma20 = mpf.make_addplot(sort_df['sma20'],type='line',color = 'b', width=1, alpha=0.5)
@@ -63,24 +66,21 @@ def make_plt(df,sort_df):
     mpf.plot(sort_df, type='candle', addplot=[sma5,sma20,sma100,upper,lower],style='charles',show_nontrading=True,figratio=(15,6),savefig = a)
     return a
 
-@app.route('/1')
-def a():
-    return render_template('a.html')
 
+@app.route("/ma", methods=['POST','GET'])
+def ma():
 
-@app.route('/2')
-def ab():
-    a = 3
-    return render_template('b.html', parameter = a)
-
-
-@app.route('/abc')
-def abc():
     df = crawling()
+    print(df)
     sort_df = sum(df)
     a = make_plt(df,sort_df)
     a.seek(0)
-    return send_file(a, mimetype='image/png')
+    send_file(a, mimetype='image/png')
+    return render_template('a.html')
+
+@app.route("/abcd")
+def abcd():
+    return render_template('강상우.html')
 
 if __name__ == '__main__':
-    app.run()   
+    app.run(debug=True)

@@ -4,7 +4,20 @@
     <title>강상우</title>
   </head>
   <body>
-    .
-    <img src="{{ url_for('abc') }}" alt="Stock Chart" />
+    <form action="/ma" method="POST">
+      <input type="checkbox" name="sma5" value="sma5">sma5</input>
+      <br/>
+      <input type="checkbox" name="sma20" value="sma20">sma20</input>
+      <br/>
+      <input type="checkbox" name="sma100" value="sma100">sma100</input>
+      <br/>
+      <input type="checkbox" name="upper" value="upper">upper</input>
+      <br/>
+      <input type="checkbox" name="lower" value="lower">lower</input>
+      <br/>
+      <button type="submit">Submit</button>
+    </form>
+    <!-- <img src="{{url_for('static',filename='a.png')}}" /> -->
+    <img src="{{ url_for('ma') }}" alt="Image">
   </body>
 </html>
