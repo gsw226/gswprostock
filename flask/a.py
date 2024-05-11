@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_file, request
+from flask import Flask, render_template, send_file, request, session
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
@@ -11,6 +11,7 @@ import mplfinance as mpf
 from io import BytesIO
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'my_secret_key'
 
 def crawling():
     pd.set_option('display.max_columns', None)
@@ -30,10 +31,6 @@ def crawling():
         df = pd.concat([df, table[0].dropna()])
     return df
 def sum(df):
-    df = df.reset_index(drop=True)
-    df.drop(columns=['전일비'], inplace=True)
-    df = df.rename(columns={"날짜":"date","시가":"open","고가":"high","저가":"low","종가":"close","거래량":"volume"})
-
     sort_df = df.sort_index(ascending=False)
     date_format = "%Y.%m.%d"
     sort_df['date'] = pd.to_datetime(sort_df['date'], format=date_format)
@@ -51,30 +48,66 @@ def sum(df):
     sort_df['upper'] = sort_df['sma20'] + (sort_df['stddev']*2)
     sort_df['lower'] = sort_df['sma20'] - (sort_df['stddev']*2)
     return sort_df
-def make_plt(df,sort_df):
-    sma5 = mpf.make_addplot(sort_df['sma5'],type='line',color = 'r', width=1, alpha=0.5)
-    sma20 = mpf.make_addplot(sort_df['sma20'],type='line',color = 'b', width=1, alpha=0.5)
-    sma100 = mpf.make_addplot(sort_df['sma100'],type='line',color = 'g', width=1, alpha=0.5)
 
-    upper = mpf.make_addplot(sort_df['upper'],type='line',color = 'y', width=0.7, alpha=1)
-    lower = mpf.make_addplot(sort_df['lower'],type='line',color = 'y', width=0.7, alpha=1)
-    
+
+def make_plt(df,sort_df,sma5_,sma20_,sma100_,upper_,lower_):
+    addplt = []
     a = BytesIO()
+    
+    if sma5_== 'sma5':
+        sma5 = mpf.make_addplot(sort_df['sma5'],type='line',color = 'r', width=1, alpha=0.5)
+        addplt.append(sma5)
+    if sma20_== 'sma20':
+        sma20 = mpf.make_addplot(sort_df['sma20'],type='line',color = 'b', width=1, alpha=0.5)
+        addplt.append(sma20)
+    if sma100_== 'sma100':
+        sma100 = mpf.make_addplot(sort_df['sma100'],type='line',color = 'g', width=1, alpha=0.5)
+        addplt.append(sma100)
+    if upper_== 'upper':
+        upper = mpf.make_addplot(sort_df['upper'],type='line',color = 'y', width=0.7, alpha=1)
+        addplt.append(upper)
+    if lower_== 'lower':
+        lower = mpf.make_addplot(sort_df['lower'],type='line',color = 'y', width=0.7, alpha=1)
+        addplt.append(lower)
 
-    mpf.plot(sort_df, type='candle', addplot=[sma5,sma20,sma100,upper,lower],style='charles',show_nontrading=True,figratio=(15,6),savefig = a)
+    mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(15,6),savefig = a)
     
     return a
 
-@app.route("/ma", methods=['POST','GET'])
+@app.route("/ma")
 def ma():
+    sma5_ = session.get('sma5', '')
+    sma20_ = session.get('sma20', '')
+    sma100_ = session.get('sma100', '')
+    upper_ = session.get('upper', '')
+    lower_ = session.get('lower', '')
     df = crawling()
-    sort_df = sum(df)
-    a = make_plt(df,sort_df)
-    a.seek(0)
-    return send_file(a, mimetype='image/png')
+    df = df.reset_index(drop=True)
+    df.drop(columns=['전일비'], inplace=True)
+    df = df.rename(columns={"날짜":"date","시가":"open","고가":"high","저가":"low","종가":"close","거래량":"volume"})
 
-@app.route('/1')
+    sort_df = sum(df)
+
+    a = make_plt(df,sort_df,sma5_,sma20_, sma100_, upper_, lower_)
+    a.seek(0)
+    
+    return send_file(a, mimetype='image/png')
+@app.route('/1', methods=['POST','GET'])
 def a():
+    if request.method == 'POST':
+        sma5_ = request.form.get('sma5')
+        sma20_ = request.form.get('sma20')
+        sma100_ = request.form.get('sma100')
+        upper_ = request.form.get('upper')
+        lower_ = request.form.get('lower')
+        
+        session['sma5'] = sma5_
+        session['sma20'] = sma20_
+        session['sma100'] = sma100_
+        session['upper'] = upper_
+        session['lower'] = lower_
+        # 모든 값이 올바르게 전달됐다면 ma 함수 호출
+    
     return render_template('a.html')
 
 
