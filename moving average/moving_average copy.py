@@ -16,30 +16,31 @@ def stock_name_to_code(stock_name):
             return code
     else:
         return 0
-def right(upper,lower,sma5,sma100):
-    boll = int(input('볼린저가 수렴했나요?(수렴했으면1 안햇으면0)'))
-    if boll == 1:
-        buy(upper,lower,sma5,sma100)
-    else:
-        sell(upper,lower,sma5,sma100)
-def op_sell(upper,lower,sma5,sma100):
-    if sma5 < sma100:
-        sell(upper,lower,sma5,sma100)
-        if sma5 < lower:
-            sell
+    
+# def right(upper,lower,sma5,sma100):
+#     boll = int(input('볼린저가 수렴했나요?(수렴했으면1 안햇으면0)'))
+#     if boll == 1:
+#         buy(upper,lower,sma5,sma100)
+#     else:
+#         sell(upper,lower,sma5,sma100)
+# def op_sell(upper,lower,sma5,sma100):
+#     if sma5 < sma100:
+#         sell(upper,lower,sma5,sma100)
+#         if sma5 < lower:
+#             sell
 
-def sell(upper,lower,sma5,sma100):
-    for a,i in enumerate(sma5):
-        for b,j in enumerate(sma100):
+# def sell(upper,lower,sma5,sma100):
+#     for a,i in enumerate(sma5):
+#         for b,j in enumerate(sma100):
             
-# def buy:  
-def right_or_op(upper,lower,sma 5,sma100):
-    for a,i in enumerate(sma5):
-        for b,j in enumerate(sma100):
-            if i > j:
-                right(upper,lower,sma5,sma100)
-            elif i < j:
-                op(upper,lower,sma5,sma100)
+# # def buy:  
+# def right_or_op(upper,lower,sma 5,sma100):
+#     for a,i in enumerate(sma5):
+#         for b,j in enumerate(sma100):
+#             if i > j:
+#                 right(upper,lower,sma5,sma100)
+#             elif i < j:
+#                 op(upper,lower,sma5,sma100)
 
 
 pd.set_option('display.max_columns', None)
@@ -56,7 +57,7 @@ while 1:
     else:
         print('종목 코드를 찾을 수 없습니다')
 
-headers = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36'}
+headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'}
 df = pd.DataFrame()
 excel_df = pd.DataFrame()
 sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'
@@ -94,7 +95,7 @@ sma100_list = sort_df['sma100'].tolist()
 upper_list = sort_df['upper'].tolist()
 lower_list = sort_df['lower'].tolist()
 
-right_or_op(upper_list,lower_list,sma5_list,sma100_list)
+# right_or_op(upper_list,lower_list,sma5_list,sma100_list)
 
 sma5 = mpf.make_addplot(sort_df['sma5'],type='line',color = 'r', width=1, alpha=0.5)
 sma20 = mpf.make_addplot(sort_df['sma20'],type='line',color = 'b', width=1, alpha=0.5)
