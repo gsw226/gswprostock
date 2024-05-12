@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_file, request, session
+from flask import Flask, render_template, send_file, request, session, redirect
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
@@ -50,6 +50,8 @@ def sum(df):
     return sort_df
 
 
+
+
 def make_plt(df,sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     addplt = []
     a = BytesIO()
@@ -73,26 +75,27 @@ def make_plt(df,sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(15,6),savefig = a)
     
     return a
-
-@app.route("/ma")
+@app.route('/ma')
 def ma():
+    df = crawling()
+    df = df.reset_index(drop=True)
+    df.drop(columns=['전일비'], inplace=True)
+    df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"})
+    sort_df = sum(df)
+    print("첫 번째 요청 전에 초기화 작업을 수행합니다.")
     sma5_ = session.get('sma5', '')
     sma20_ = session.get('sma20', '')
     sma100_ = session.get('sma100', '')
     upper_ = session.get('upper', '')
     lower_ = session.get('lower', '')
-    df = crawling()
-    df = df.reset_index(drop=True)
-    df.drop(columns=['전일비'], inplace=True)
-    df = df.rename(columns={"날짜":"date","시가":"open","고가":"high","저가":"low","종가":"close","거래량":"volume"})
-
-    sort_df = sum(df)
-
-    a = make_plt(df,sort_df,sma5_,sma20_, sma100_, upper_, lower_)
-    a.seek(0)
     
+
+    a = make_plt(df, sort_df, sma5_, sma20_, sma100_, upper_, lower_)
+    a.seek(0)
+
     return send_file(a, mimetype='image/png')
-@app.route('/1', methods=['POST','GET'])
+
+@app.route('/1', methods=['POST', 'GET'])
 def a():
     if request.method == 'POST':
         sma5_ = request.form.get('sma5')
@@ -100,15 +103,15 @@ def a():
         sma100_ = request.form.get('sma100')
         upper_ = request.form.get('upper')
         lower_ = request.form.get('lower')
-        
+
         session['sma5'] = sma5_
         session['sma20'] = sma20_
         session['sma100'] = sma100_
         session['upper'] = upper_
         session['lower'] = lower_
-        # 모든 값이 올바르게 전달됐다면 ma 함수 호출
-    
+
     return render_template('a.html')
+
 
 
 if __name__ == '__main__':
