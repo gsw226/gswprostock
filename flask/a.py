@@ -9,11 +9,41 @@ import matplotlib
 matplotlib.use('Agg')
 import mplfinance as mpf
 from io import BytesIO
+from pykrx import stock
+from numpy.polynomial.polynomial import Polynomial
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_secret_key'
 
-def crawling():
+def stock_name_to_code(stock_name):
+    ticker_list = stock.get_market_ticker_list()
+    for code in ticker_list:
+        name = stock.get_market_ticker_name(code)
+        if name == stock_name:
+            return code
+    else:
+        return 0
+
+def taylor_approximation(df, degree=2):
+    x = (df.index - df.index[0]).days
+    y = df.values
+
+    p = Polynomial.fit(x, y, degree)
+    return p
+
+def calculate_gradient_at_last_point(df, p, degree=2):
+    if len(df) < 2:
+        raise ValueError("DataFrame must contain at least two points.")
+    p = taylor_approximation(df, degree)
+    
+    p_derivative = p.deriv()
+   
+    last_point = (df.index[-1] - df.index[0]).days
+    gradient = p_derivative(last_point)
+    return gradient
+
+def crawling(stock_code):
     pd.set_option('display.max_columns', None)
     pd.set_option('display.max_rows', None)
     pd.options.display.float_format = '{:,.0f}'.format
@@ -21,8 +51,8 @@ def crawling():
     headers = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36'}
     df = pd.DataFrame()
     sort_df = pd.DataFrame()
-    sise_url = f'https://finance.naver.com/item/sise_day.nhn?code=068270'
-    for page in range(1,51):
+    sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'    
+    for page in range(1,31):
         page_url = '{}&page={}'.format(sise_url, page)
         response = requests.get(page_url, headers=headers)
         html = bs(response.text, 'html.parser')
@@ -49,9 +79,6 @@ def sum(df):
     sort_df['lower'] = sort_df['sma20'] - (sort_df['stddev']*2)
     return sort_df
 
-
-
-
 def make_plt(df,sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     addplt = []
     a = BytesIO()
@@ -75,21 +102,28 @@ def make_plt(df,sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(15,6),savefig = a)
     
     return a
+
+# def buy_sell(sort_df):
+#     if 
 @app.route('/ma')
 def ma():
-    df = crawling()
+    stock_name = session.get('stock_name', '')
+    
+    stock_code = stock_name_to_code(stock_name)
+    df = crawling(stock_code)
     df = df.reset_index(drop=True)
     df.drop(columns=['전일비'], inplace=True)
     df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"})
     sort_df = sum(df)
-    print("첫 번째 요청 전에 초기화 작업을 수행합니다.")
+    sma5_p = taylor_approximation(sort_df['sma5'], degree=2)
+    sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'], sma5_p, degree=2)
+    print(sma5_gradient)
     sma5_ = session.get('sma5', '')
     sma20_ = session.get('sma20', '')
     sma100_ = session.get('sma100', '')
     upper_ = session.get('upper', '')
     lower_ = session.get('lower', '')
     
-
     a = make_plt(df, sort_df, sma5_, sma20_, sma100_, upper_, lower_)
     a.seek(0)
 
@@ -98,18 +132,25 @@ def ma():
 @app.route('/1', methods=['POST', 'GET'])
 def a():
     if request.method == 'POST':
+        stock_name = request.form.get('stock_name')
         sma5_ = request.form.get('sma5')
         sma20_ = request.form.get('sma20')
         sma100_ = request.form.get('sma100')
         upper_ = request.form.get('upper')
         lower_ = request.form.get('lower')
-
+        
+        session['stock_name'] = stock_name
         session['sma5'] = sma5_
         session['sma20'] = sma20_
         session['sma100'] = sma100_
         session['upper'] = upper_
         session['lower'] = lower_
 
+    return render_template('a_2.html')
+
+
+@app.route('/')
+def home():
     return render_template('a.html')
 
 
