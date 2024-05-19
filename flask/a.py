@@ -25,22 +25,26 @@ def stock_name_to_code(stock_name):
     else:
         return 0
 
-def taylor_approximation(df, degree=2):
-    x = (df.index - df.index[0]).days
+def taylor_approximation(df, degree=5):
+    x = list(range(len(df)))
+    print(x)
     y = df.values
+    print(y)
 
     p = Polynomial.fit(x, y, degree)
+    print(p)
     return p
 
-def calculate_gradient_at_last_point(df, p, degree=2):
+def calculate_gradient_at_last_point(df, sense, degree=5):
+    df = df[-sense:-1]
     if len(df) < 2:
         raise ValueError("DataFrame must contain at least two points.")
     p = taylor_approximation(df, degree)
     
     p_derivative = p.deriv()
    
-    last_point = (df.index[-1] - df.index[0]).days
-    gradient = p_derivative(last_point)
+    last_point = sense - 1#(df.index[-1] - df.index[0]).days
+    gradient = p_derivative(last_point) / ((max(df) - min(df)) / sense)
     return gradient
 
 def crawling(stock_code):
@@ -73,7 +77,7 @@ def sum(df):
     sort_df['sma5'] = sort_df['close'].rolling(window=5).mean()
     sort_df['sma20'] = sort_df['close'].rolling(window=20).mean()
     sort_df['sma100'] = sort_df['close'].rolling(window=100).mean()
-
+    
     sort_df['stddev'] = sort_df['close'].rolling(window=20).std()
     sort_df['upper'] = sort_df['sma20'] + (sort_df['stddev']*2)
     sort_df['lower'] = sort_df['sma20'] - (sort_df['stddev']*2)
@@ -103,8 +107,7 @@ def make_plt(df,sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     
     return a
 
-# def buy_sell(sort_df):
-#     if 
+
 @app.route('/ma')
 def ma():
     stock_name = session.get('stock_name', '')
@@ -115,9 +118,11 @@ def ma():
     df.drop(columns=['전일비'], inplace=True)
     df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"})
     sort_df = sum(df)
-    sma5_p = taylor_approximation(sort_df['sma5'], degree=2)
-    sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'], sma5_p, degree=2)
-    print(sma5_gradient)
+    # sma5_p = taylor_approximation(sort_df['sma5'], degree=5)
+    sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'],5, degree=2)
+    sma20_gradient= calculate_gradient_at_last_point(sort_df['sma20'],10, degree=2)
+    sma100_gradient= calculate_gradient_at_last_point(sort_df['sma100'],20, degree=2)
+    print(sma5_gradient,sma20_gradient,sma100_gradient)
     sma5_ = session.get('sma5', '')
     sma20_ = session.get('sma20', '')
     sma100_ = session.get('sma100', '')
