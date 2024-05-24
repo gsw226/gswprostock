@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_file, request, session, redirect
+from flask import Flask, render_template, send_file, request, session
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
@@ -21,18 +21,16 @@ def stock_name_to_code(stock_name):
     for code in ticker_list:
         name = stock.get_market_ticker_name(code)
         if name == stock_name:
+            print(code)
             return code
     else:
         return 0
 
 def taylor_approximation(df, degree=5):
     x = list(range(len(df)))
-    print(x)
     y = df.values
-    print(y)
 
     p = Polynomial.fit(x, y, degree)
-    print(p)
     return p
 
 def calculate_gradient_at_last_point(df, sense, degree=5):
@@ -102,7 +100,6 @@ def make_plt(df,sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     if lower_== 'lower':
         lower = mpf.make_addplot(sort_df['lower'],type='line',color = 'y', width=0.7, alpha=1)
         addplt.append(lower)
-
     mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(15,6),savefig = a)
     
     return a
@@ -117,18 +114,24 @@ def ma():
     df = df.reset_index(drop=True)
     df.drop(columns=['전일비'], inplace=True)
     df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"})
+    print(df)
     sort_df = sum(df)
+    
+    # first_volume_value = df['volume'].iloc[299]
+    # session['volume'] = first_volume_value
+
     # sma5_p = taylor_approximation(sort_df['sma5'], degree=5)
-    sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'],5, degree=2)
-    sma20_gradient= calculate_gradient_at_last_point(sort_df['sma20'],10, degree=2)
-    sma100_gradient= calculate_gradient_at_last_point(sort_df['sma100'],20, degree=2)
-    print(sma5_gradient,sma20_gradient,sma100_gradient)
+    # sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'],5, degree=2)
+    # sma20_gradient= calculate_gradient_at_last_point(sort_df['sma20'],10, degree=2)
+    # sma100_gradient= calculate_gradient_at_last_point(sort_df['sma100'],20, degree=2)
+    # print(sma5_gradient,sma20_gradient,sma100_gradient)
+
     sma5_ = session.get('sma5', '')
     sma20_ = session.get('sma20', '')
     sma100_ = session.get('sma100', '')
     upper_ = session.get('upper', '')
     lower_ = session.get('lower', '')
-    
+
     a = make_plt(df, sort_df, sma5_, sma20_, sma100_, upper_, lower_)
     a.seek(0)
 
@@ -150,8 +153,10 @@ def a():
         session['sma100'] = sma100_
         session['upper'] = upper_
         session['lower'] = lower_
-
+        # volume = session.get('volume', '')
+    # return render_template('a_2.html', value1 = volume)
     return render_template('a_2.html')
+
 
 
 @app.route('/')
