@@ -11,6 +11,8 @@ import mplfinance as mpf
 from io import BytesIO
 from pykrx import stock
 from numpy.polynomial.polynomial import Polynomial
+from datetime import datetime, timedelta
+
 
 
 app = Flask(__name__)
@@ -21,29 +23,41 @@ def stock_name_to_code(stock_name):
     for code in ticker_list:
         name = stock.get_market_ticker_name(code)
         if name == stock_name:
+            print('=========')
             print(code)
             return code
     else:
         return 0
 
-def taylor_approximation(df, degree=5):
+def approximation(df, degree=5):
     x = list(range(len(df)))
     y = df.values
 
     p = Polynomial.fit(x, y, degree)
+    # y = ax^2 + bx^2 + c
     return p
 
 def calculate_gradient_at_last_point(df, sense, degree=5):
     df = df[-sense:-1]
     if len(df) < 2:
         raise ValueError("DataFrame must contain at least two points.")
-    p = taylor_approximation(df, degree)
+    p = approximation(df, degree)
     
     p_derivative = p.deriv()
    
     last_point = sense - 1#(df.index[-1] - df.index[0]).days
     gradient = p_derivative(last_point) / ((max(df) - min(df)) / sense)
-    return gradient
+    intercept = p(last_point) - gradient * last_point
+
+    return gradient,intercept
+
+from datetime import datetime, timedelta
+
+def get_tomorrow_date():
+    today = datetime.today()
+    tomorrow = today + timedelta(days=1)
+    return tomorrow.strftime('%Y-%m-%d')
+
 
 def crawling(stock_code):
     pd.set_option('display.max_columns', None)
@@ -54,6 +68,7 @@ def crawling(stock_code):
     df = pd.DataFrame()
     sort_df = pd.DataFrame()
     sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'    
+    # sise_url = 'https://finance.naver.com/item/sise_day.nhn?code=072870'    
     for page in range(1,31):
         page_url = '{}&page={}'.format(sise_url, page)
         response = requests.get(page_url, headers=headers)
@@ -117,15 +132,46 @@ def ma():
     print(df)
     sort_df = sum(df)
     
-    # first_volume_value = df['volume'].iloc[299]
-    # session['volume'] = first_volume_value
 
-    # sma5_p = taylor_approximation(sort_df['sma5'], degree=5)
-    # sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'],5, degree=2)
-    # sma20_gradient= calculate_gradient_at_last_point(sort_df['sma20'],10, degree=2)
-    # sma100_gradient= calculate_gradient_at_last_point(sort_df['sma100'],20, degree=2)
-    # print(sma5_gradient,sma20_gradient,sma100_gradient)
+    sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'],5, degree=2)
+    sma20_gradient= calculate_gradient_at_last_point(sort_df['sma20'],10, degree=2)
+    sma100_gradient= calculate_gradient_at_last_point(sort_df['sma100'],20, degree=2)
+    print(sma5_gradient,sma20_gradient,sma100_gradient)
 
+    sma5_graph = sma5_gradient[0]*3000 + sma5_gradient[1]
+    sma20_graph = sma20_gradient[0]*20000 + sma20_gradient[1]
+    sma100_graph = sma100_gradient[0]*100000 + sma100_gradient[1]
+
+    c = 0
+    if sma5_graph > df['close'].iloc[0]:
+        print('sma5: 매매')
+        c += 1
+    else:
+        print('sma5: 매도')
+        c -= 1
+
+    if sma20_graph > df['close'].iloc[0]:
+        print('sma20: 매매')
+        c += 1
+    else:
+        print('sma20: 매도')
+        c -= 1
+
+    if sma100_graph > df['close'].iloc[0]:
+        print('sma100: 매매')
+        c += 1
+    else:
+        print('sma100: 매도')
+        c -= 1
+
+    if c > 0:
+        print('최종: 매매')
+    else:
+        print('최종: 매도')         
+    sum_graph = (sma5_graph+sma20_graph+sma100_graph)/3
+    expected_profit = sum_graph - df['close'].iloc[0]
+    print('예상 종가:',sum_graph)
+    print('예상 순수익:',expected_profit)
     sma5_ = session.get('sma5', '')
     sma20_ = session.get('sma20', '')
     sma100_ = session.get('sma100', '')
@@ -153,8 +199,6 @@ def a():
         session['sma100'] = sma100_
         session['upper'] = upper_
         session['lower'] = lower_
-        # volume = session.get('volume', '')
-    # return render_template('a_2.html', value1 = volume)
     return render_template('a_2.html')
 
 
