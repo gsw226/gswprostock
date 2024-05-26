@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 
 
 
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_secret_key'
 
@@ -50,6 +51,14 @@ def calculate_gradient_at_last_point(df, sense, degree=5):
     intercept = p(last_point) - gradient * last_point
 
     return gradient,intercept
+
+def calculate_expected(df, sense, degree=5):
+    df = df[-sense:-1]
+    if len(df) < 2:
+        raise ValueError("DataFrame must contain at least two points.")
+    p = approximation(df, degree)
+    
+    return p(sense)
 
 from datetime import datetime, timedelta
 
@@ -133,50 +142,41 @@ def ma():
     sort_df = sum(df)
     
 
-    sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'],5, degree=2)
-    sma20_gradient= calculate_gradient_at_last_point(sort_df['sma20'],10, degree=2)
-    sma100_gradient= calculate_gradient_at_last_point(sort_df['sma100'],20, degree=2)
-    print(sma5_gradient,sma20_gradient,sma100_gradient)
+    # sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'],5, degree=4)
+    # sma20_gradient= calculate_gradient_at_last_point(sort_df['sma20'],20, degree=4)
+    # sma100_gradient= calculate_gradient_at_last_point(sort_df['sma100'],100, degree=4)
 
-    sma5_graph = sma5_gradient[0]*3000 + sma5_gradient[1]
-    sma20_graph = sma20_gradient[0]*20000 + sma20_gradient[1]
-    sma100_graph = sma100_gradient[0]*100000 + sma100_gradient[1]
+    # sma5_graph = sma5_gradient[0]*3000 + sma5_gradient[1]/1.5
+    # sma20_graph = sma20_gradient[0]*20000 + sma20_gradient[1]/1.5
+    # sma100_graph = sma100_gradient[0]*100000 + sma100_gradient[1]/1.5
 
-    c = 0
-    if sma5_graph > df['close'].iloc[0]:
-        print('sma5: 매매')
-        c += 1
-    else:
-        print('sma5: 매도')
-        c -= 1
+    sma5_expected = calculate_expected(sort_df['sma5'],5, degree=2)
+    sma20_expected= calculate_expected(sort_df['sma20'],20, degree=3)
+    sma100_expected= calculate_expected(sort_df['sma100'],100, degree=5)
+    print(sma5_expected,sma20_expected,sma100_expected)
+    
+    sma5_expect_profit = sma5_expected - df['close'].iloc[0]
+    sma20_expect_profit = sma20_expected - df['close'].iloc[0]
+    sma100_expect_profit = sma100_expected - df['close'].iloc[0]
 
-    if sma20_graph > df['close'].iloc[0]:
-        print('sma20: 매매')
-        c += 1
-    else:
-        print('sma20: 매도')
-        c -= 1
-
-    if sma100_graph > df['close'].iloc[0]:
-        print('sma100: 매매')
-        c += 1
-    else:
-        print('sma100: 매도')
-        c -= 1
-
-    if c > 0:
-        print('최종: 매매')
-    else:
-        print('최종: 매도')         
-    sum_graph = (sma5_graph+sma20_graph+sma100_graph)/3
-    expected_profit = sum_graph - df['close'].iloc[0]
-    print('예상 종가:',sum_graph)
-    print('예상 순수익:',expected_profit)
     sma5_ = session.get('sma5', '')
     sma20_ = session.get('sma20', '')
     sma100_ = session.get('sma100', '')
     upper_ = session.get('upper', '')
     lower_ = session.get('lower', '')
+    
+
+    session['sma5_expect'] = sma5_expected
+    session['sma20_expect'] = sma20_expected
+    session['sma100_expect'] = sma100_expected
+
+    session['sma5_expect'] = sma5_expect_profit
+    session['sma20_expect'] = sma20_expect_profit
+    session['sma100_expect'] = sma100_expect_profit
+    
+
+
+    # render_template('a_2.html',value1 = sum_graph,value2 = expected_profit)
 
     a = make_plt(df, sort_df, sma5_, sma20_, sma100_, upper_, lower_)
     a.seek(0)
@@ -199,7 +199,11 @@ def a():
         session['sma100'] = sma100_
         session['upper'] = upper_
         session['lower'] = lower_
-    return render_template('a_2.html')
+
+        except_profit = session.get('expect_profit', '')
+        sum_graph = session.get('sum_graph', '')
+
+    return render_template('a_2.html',value1 = sum_graph,value2 = except_profit)
 
 
 
