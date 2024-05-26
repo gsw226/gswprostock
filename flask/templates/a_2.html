@@ -20,8 +20,19 @@
         <br/>
         <button id="submit" type="submit">Submit</button>
       </form>
-      <div class="print"> 예상 종가: {{value1}} </div>
-      <div class="print"> 예상 순수익: {{value2}} </div>
+      <h2>명일 예상 종가</h2>
+      <p>sma5: {{ lst1[0] }}원</p>
+      <p>sma20: {{ lst1[1] }}원</p>
+      <p>sma100: {{ lst1[2] }}원</p>
+
+      <h2>명일 종가에 대한 순수익</h2>
+      <p>sma5: {{ lst2[0] }}원</p>
+      <p>sma20: {{ lst2[1] }}원</p>
+      <p>sma100: {{ lst2[2] }}원</p>
+
+      <h2>매매/매도</h2>
+      <p>{{ expect }}</p>
+
       <img src="/ma" alt="Stock Chart" /> 
     </center>
   </body>

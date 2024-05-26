@@ -77,7 +77,6 @@ def crawling(stock_code):
     df = pd.DataFrame()
     sort_df = pd.DataFrame()
     sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'    
-    # sise_url = 'https://finance.naver.com/item/sise_day.nhn?code=072870'    
     for page in range(1,31):
         page_url = '{}&page={}'.format(sise_url, page)
         response = requests.get(page_url, headers=headers)
@@ -105,7 +104,7 @@ def sum(df):
     sort_df['lower'] = sort_df['sma20'] - (sort_df['stddev']*2)
     return sort_df
 
-def make_plt(df,sort_df,sma5_,sma20_,sma100_,upper_,lower_):
+def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     addplt = []
     a = BytesIO()
     
@@ -140,45 +139,32 @@ def ma():
     df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"})
     print(df)
     sort_df = sum(df)
+
+    sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
+    sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
+    sma100_expect= calculate_expected(sort_df['sma100'],100, degree=5)
+    print(sma5_expect,sma20_expect,sma100_expect)
     
+    sma5_expect_profit = sma5_expect - df['close'].iloc[0]
+    sma20_expect_profit = sma20_expect - df['close'].iloc[0]
+    sma100_expect_profit = sma100_expect - df['close'].iloc[0]
+    print(sma5_expect_profit,sma20_expect_profit,sma100_expect_profit)
 
-    # sma5_gradient = calculate_gradient_at_last_point(sort_df['sma5'],5, degree=4)
-    # sma20_gradient= calculate_gradient_at_last_point(sort_df['sma20'],20, degree=4)
-    # sma100_gradient= calculate_gradient_at_last_point(sort_df['sma100'],100, degree=4)
+    session['sma5_expect'] = sma5_expect
+    session['sma20_expect'] = sma20_expect
+    session['sma100_expect'] = sma100_expect
 
-    # sma5_graph = sma5_gradient[0]*3000 + sma5_gradient[1]/1.5
-    # sma20_graph = sma20_gradient[0]*20000 + sma20_gradient[1]/1.5
-    # sma100_graph = sma100_gradient[0]*100000 + sma100_gradient[1]/1.5
-
-    sma5_expected = calculate_expected(sort_df['sma5'],5, degree=2)
-    sma20_expected= calculate_expected(sort_df['sma20'],20, degree=3)
-    sma100_expected= calculate_expected(sort_df['sma100'],100, degree=5)
-    print(sma5_expected,sma20_expected,sma100_expected)
-    
-    sma5_expect_profit = sma5_expected - df['close'].iloc[0]
-    sma20_expect_profit = sma20_expected - df['close'].iloc[0]
-    sma100_expect_profit = sma100_expected - df['close'].iloc[0]
-
+    session['sma5_expect_profit'] = sma5_expect_profit
+    session['sma20_expect_profit'] = sma20_expect_profit
+    session['sma100_expect_profit'] = sma100_expect_profit
+        
     sma5_ = session.get('sma5', '')
     sma20_ = session.get('sma20', '')
     sma100_ = session.get('sma100', '')
     upper_ = session.get('upper', '')
     lower_ = session.get('lower', '')
-    
 
-    session['sma5_expect'] = sma5_expected
-    session['sma20_expect'] = sma20_expected
-    session['sma100_expect'] = sma100_expected
-
-    session['sma5_expect'] = sma5_expect_profit
-    session['sma20_expect'] = sma20_expect_profit
-    session['sma100_expect'] = sma100_expect_profit
-    
-
-
-    # render_template('a_2.html',value1 = sum_graph,value2 = expected_profit)
-
-    a = make_plt(df, sort_df, sma5_, sma20_, sma100_, upper_, lower_)
+    a = make_plt(sort_df, sma5_, sma20_, sma100_, upper_, lower_)
     a.seek(0)
 
     return send_file(a, mimetype='image/png')
@@ -200,10 +186,36 @@ def a():
         session['upper'] = upper_
         session['lower'] = lower_
 
-        except_profit = session.get('expect_profit', '')
-        sum_graph = session.get('sum_graph', '')
+    sma_expect = []
+    sma_expect_profit = []
+    sma5_expect = session.get('sma5_expect', '')
+    sma_expect.append(int(sma5_expect))
+    sma20_expect = session.get('sma20_expect', '')
+    sma_expect.append(int(sma20_expect))
+    sma100_expect = session.get('sma100_expect', '')
+    sma_expect.append(int(sma100_expect))
 
-    return render_template('a_2.html',value1 = sum_graph,value2 = except_profit)
+    sma5_expect_profit = session.get('sma5_expect_profit', '')
+    sma_expect_profit.append(int(sma5_expect_profit))
+    sma20_expect_profit = session.get('sma20_expect_profit', '')
+    sma_expect_profit.append(int(sma20_expect_profit))
+    sma100_expect_profit = session.get('sma100_expect_profit', '')
+    sma_expect_profit.append(int(sma100_expect_profit))
+
+    expect = ''
+    if max(sma_expect) > 0:
+        expect = '매매'
+        if max(sma_expect) == sma5_expect:
+            expect += '단타'
+        elif max(sma_expect) == sma20_expect:
+            expect += '스윙'
+        else:
+            expect += '장타'
+    else:
+        expect = '매도'
+    
+    return render_template('a_2.html',lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect)
+
 
 
 
