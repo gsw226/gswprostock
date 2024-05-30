@@ -189,28 +189,28 @@ def a():
     sma_expect = []
     sma_expect_profit = []
     sma5_expect = session.get('sma5_expect', '')
-    sma_expect.append(int(sma5_expect))
+    sma_expect.append(sma5_expect)
     sma20_expect = session.get('sma20_expect', '')
-    sma_expect.append(int(sma20_expect))
+    sma_expect.append(sma20_expect)
     sma100_expect = session.get('sma100_expect', '')
-    sma_expect.append(int(sma100_expect))
+    sma_expect.append(sma100_expect)
 
     sma5_expect_profit = session.get('sma5_expect_profit', '')
-    sma_expect_profit.append(int(sma5_expect_profit))
+    sma_expect_profit.append(sma5_expect_profit)
     sma20_expect_profit = session.get('sma20_expect_profit', '')
-    sma_expect_profit.append(int(sma20_expect_profit))
+    sma_expect_profit.append(sma20_expect_profit)
     sma100_expect_profit = session.get('sma100_expect_profit', '')
-    sma_expect_profit.append(int(sma100_expect_profit))
+    sma_expect_profit.append(sma100_expect_profit)
 
     expect = ''
-    if max(sma_expect) > 0:
+    if int(max(sma_expect)) > 0:
         expect = '매매'
-        if max(sma_expect) == sma5_expect:
-            expect += '단타'
-        elif max(sma_expect) == sma20_expect:
-            expect += '스윙'
+        if int(max(sma_expect)) == sma5_expect:
+            expect += ' 단타'
+        elif int(max(sma_expect)) == sma20_expect:
+            expect += ' 스윙'
         else:
-            expect += '장타'
+            expect += ' 장타'
     else:
         expect = '매도'
     
