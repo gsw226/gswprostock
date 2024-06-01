@@ -48,7 +48,7 @@ pd.set_option('display.max_rows', None)
 pd.options.display.float_format = '{:,.0f}'.format
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-while 1:
+while 0:
     stock_name = input('종목 입력:')
     stock_code = stock_name_to_code(stock_name)
     if stock_code != 0:
@@ -60,7 +60,7 @@ while 1:
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'}
 df = pd.DataFrame()
 excel_df = pd.DataFrame()
-sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'
+sise_url = f'https://finance.naver.com/item/sise_day.nhn?code=005930'
 for page in range(1,51):
     page_url = '{}&page={}'.format(sise_url, page)
     response = requests.get(page_url, headers=headers)

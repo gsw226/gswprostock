@@ -2,33 +2,37 @@ from flask import Flask, render_template, send_file, request, session
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
-import numpy as np
 import warnings
-import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
 import mplfinance as mpf
 from io import BytesIO
 from pykrx import stock
 from numpy.polynomial.polynomial import Polynomial
-from datetime import datetime, timedelta
-
-
-
+import investpy
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_secret_key'
 
-def stock_name_to_code(stock_name):
-    ticker_list = stock.get_market_ticker_list()
-    for code in ticker_list:
-        name = stock.get_market_ticker_name(code)
-        if name == stock_name:
-            print('=========')
-            print(code)
-            return code
-    else:
-        return 0
+# def stock_name_to_code(stock_name):
+#     stock_list = investpy.stocks.get_stocks(country='south korea')
+    
+#     stock_list.reset_index(drop=True, inplace=True)
+    
+#     stock_row = stock_list[stock_list['name'] == stock_name]
+#     if not stock_row.empty:
+#         return stock_row.iloc[0]['symbol']
+    
+#     return None
+# ===========================
+#     ticker_list = stock.get_market_ticker_list()
+        
+#         for code in ticker_list:
+#             name = stock.get_market_ticker_name(code)
+#             if name == stock_name:
+#                 return code
+#         else:
+#             return 0
 
 def approximation(df, degree=5):
     x = list(range(len(df)))
@@ -46,7 +50,7 @@ def calculate_gradient_at_last_point(df, sense, degree=5):
     
     p_derivative = p.deriv()
    
-    last_point = sense - 1#(df.index[-1] - df.index[0]).days
+    last_point = sense - 1
     gradient = p_derivative(last_point) / ((max(df) - min(df)) / sense)
     intercept = p(last_point) - gradient * last_point
 
@@ -60,31 +64,33 @@ def calculate_expected(df, sense, degree=5):
     
     return p(sense)
 
-from datetime import datetime, timedelta
 
-def get_tomorrow_date():
-    today = datetime.today()
-    tomorrow = today + timedelta(days=1)
-    return tomorrow.strftime('%Y-%m-%d')
-
-
-def crawling(stock_code):
+def crawling():
     pd.set_option('display.max_columns', None)
     pd.set_option('display.max_rows', None)
     pd.options.display.float_format = '{:,.0f}'.format
     warnings.simplefilter(action='ignore', category=FutureWarning)
     headers = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36'}
     df = pd.DataFrame()
-    sort_df = pd.DataFrame()
-    sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'    
+    # sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'    
+    sise_url = f'https://finance.naver.com/item/sise_day.nhn?code=005930'    
     for page in range(1,31):
         page_url = '{}&page={}'.format(sise_url, page)
         response = requests.get(page_url, headers=headers)
+        if response.status_code != 200:
+            print(f'Failed to retrieve data from page {page}')
+            continue
         html = bs(response.text, 'html.parser')
         html_table = html.select("table")
         table = pd.read_html(str(html_table))
         df = pd.concat([df, table[0].dropna()])
+        print(df)
+    df = df.reset_index(drop=True)
+    print("REINDEX\n",df)
+    df.drop(columns=['전일비'], inplace=True)
+    df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"}) 
     return df
+
 def sum(df):
     sort_df = df.sort_index(ascending=False)
     date_format = "%Y.%m.%d"
@@ -104,9 +110,15 @@ def sum(df):
     sort_df['lower'] = sort_df['sma20'] - (sort_df['stddev']*2)
     return sort_df
 
-def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
+def make_plt(sort_df):
     addplt = []
     a = BytesIO()
+    
+    sma5_ = session.get('sma5', '')
+    sma20_ = session.get('sma20', '')
+    sma100_ = session.get('sma100', '')
+    upper_ = session.get('upper', '')
+    lower_ = session.get('lower', '')
     
     if sma5_== 'sma5':
         sma5 = mpf.make_addplot(sort_df['sma5'],type='line',color = 'r', width=1, alpha=0.5)
@@ -130,14 +142,11 @@ def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
 
 @app.route('/ma')
 def ma():
-    stock_name = session.get('stock_name', '')
-    
-    stock_code = stock_name_to_code(stock_name)
-    df = crawling(stock_code)
-    df = df.reset_index(drop=True)
-    df.drop(columns=['전일비'], inplace=True)
-    df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"})
-    print(df)
+    stock_name = session['stock_name']
+    print("STOCKNAME:",stock_name)
+    # stock_code = stock_name_to_code(stock_name)
+    df = crawling()
+    #print(df)
     sort_df = sum(df)
 
     sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
@@ -157,14 +166,8 @@ def ma():
     session['sma5_expect_profit'] = sma5_expect_profit
     session['sma20_expect_profit'] = sma20_expect_profit
     session['sma100_expect_profit'] = sma100_expect_profit
-        
-    sma5_ = session.get('sma5', '')
-    sma20_ = session.get('sma20', '')
-    sma100_ = session.get('sma100', '')
-    upper_ = session.get('upper', '')
-    lower_ = session.get('lower', '')
 
-    a = make_plt(sort_df, sma5_, sma20_, sma100_, upper_, lower_)
+    a = make_plt(sort_df)
     a.seek(0)
 
     return send_file(a, mimetype='image/png')
@@ -178,7 +181,7 @@ def a():
         sma100_ = request.form.get('sma100')
         upper_ = request.form.get('upper')
         lower_ = request.form.get('lower')
-        
+        print(stock_name)
         session['stock_name'] = stock_name
         session['sma5'] = sma5_
         session['sma20'] = sma20_
@@ -205,9 +208,9 @@ def a():
     expect = ''
     if int(max(sma_expect)) > 0:
         expect = '매매'
-        if int(max(sma_expect)) == sma5_expect:
+        if int(max(sma_expect)) == int(sma5_expect):
             expect += ' 단타'
-        elif int(max(sma_expect)) == sma20_expect:
+        elif int(max(sma_expect)) == int(sma20_expect):
             expect += ' 스윙'
         else:
             expect += ' 장타'
@@ -215,7 +218,7 @@ def a():
         expect = '매도'
     
     return render_template('a_2.html',lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect)
-
+    # return render_template('a_2.html')
 
 
 
