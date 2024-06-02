@@ -1,36 +1,70 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>강상우</title>
-  </head>
-  <body>
-    <form action="/1" method="POST">
-      <input type="text" name="stock_name" value="" placeholder="종목 이름을 입력하세요">
-      <br/>
-      <input type="checkbox" name="sma5" value="sma5">sma5</input>
-      <br/>
-      <input type="checkbox" name="sma20" value="sma20">sma20</input>
-      <br/>
-      <input type="checkbox" name="sma100" value="sma100">sma100</input>
-      <br/>
-      <input type="checkbox" name="upper" value="upper">upper</input>
-      <br/>
-      <input type="checkbox" name="lower" value="lower">lower</input>
-      <br/>
-      <button id="submit" type="submit">Submit</button>
-    </form>
-    <h2>명일 예상 종가</h2>
-      <p>sma5: {{ lst1[0] }}원</p>
-      <p>sma20: {{ lst1[1] }}원</p>
-      <p>sma100: {{ lst1[2] }}원</p>
-
-      <h2>명일 종가에 대한 순수익</h2>
-      <p>sma5: {{ lst2[0] }}원</p>
-      <p>sma20: {{ lst2[1] }}원</p>
-      <p>sma100: {{ lst2[2] }}원</p>
-
-      <h2>매매/매도</h2>
-      <p>{{ expect }}</p>
-    <img src="/ma" alt="Stock Chart" /> 
-  </body>
+<html lang="ko">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>강상우</title>
+		<style>
+			body {
+        margin: 0;
+				display: flex;
+				justify-content: space-between;
+			}
+			form {
+        margin-right: 8;
+				background-color: rgb(95, 198, 198);  
+			}
+			.container {
+        width: fit-content;
+        margin-right: 8;
+				display: flex;
+				flex-direction: column; 
+				justify-content: space-around;
+				align-items: center;
+				background-color: red;
+				justify-content: center;
+			}
+			img {
+        margin-right: 8;
+        width: 300px;
+				background-color: blue;
+			}
+		</style>
+	</head>
+	<body>
+		<form action="/" method="POST">
+			<input type="text" name="stock_name" value="" placeholder="종목 이름을 입력하세요">
+			<br/>
+			<input type="checkbox" name="sma5" value="sma5">sma5</input>
+			<br/>
+			<input type="checkbox" name="sma20" value="sma20">sma20</input>
+			<br/>
+			<input type="checkbox" name="sma100" value="sma100">sma100</input>
+			<br/>
+			<input type="checkbox" name="upper" value="upper">upper</input>
+			<br/>
+			<input type="checkbox" name="lower" value="lower">lower</input>
+			<br/>
+			<button id="submit" type="submit">Submit</button>
+		</form>
+		<div class="container">
+			{% if lst1 %}
+				<h2>명일 예상 종가</h2>
+				<p>sma5: {{ lst1[0] }}원</p>
+				<p>sma20: {{ lst1[1] }}원</p>
+				<p>sma100: {{ lst1[2] }}원</p>
+			{% endif %}
+			{% if lst2 %}
+				<h2>명일 종가에 대한 순수익</h2>
+				<p>sma5: {{ lst2[0] }}원</p>
+				<p>sma20: {{ lst2[1] }}원</p>
+				<p>sma100: {{ lst2[2] }}원</p>
+			{% endif %}
+			{% if expect %}
+				<h2>매매/매도</h2>
+				<p>{{ expect }}</p>
+			{% endif %}
+		</div>
+		<img src="/ma" alt="Stock Chart">
+	</body>
 </html>

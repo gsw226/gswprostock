@@ -77,14 +77,13 @@ def crawling():
     for page in range(1,31):
         page_url = '{}&page={}'.format(sise_url, page)
         response = requests.get(page_url, headers=headers)
+        print("RESPONSE", response.text)
         if response.status_code != 200:
             print(f'Failed to retrieve data from page {page}')
-            continue
         html = bs(response.text, 'html.parser')
         html_table = html.select("table")
         table = pd.read_html(str(html_table))
         df = pd.concat([df, table[0].dropna()])
-        print(df)
     df = df.reset_index(drop=True)
     print("REINDEX\n",df)
     df.drop(columns=['전일비'], inplace=True)
@@ -135,19 +134,20 @@ def make_plt(sort_df):
     if lower_== 'lower':
         lower = mpf.make_addplot(sort_df['lower'],type='line',color = 'y', width=0.7, alpha=1)
         addplt.append(lower)
-    mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(15,6),savefig = a)
+    mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(13,6),savefig = a)
     
     return a
 
 
 @app.route('/ma')
 def ma():
-    stock_name = session['stock_name']
-    print("STOCKNAME:",stock_name)
+    # stock_name = session['stock_name']
+    # print("STOCKNAME:",stock_name)
     # stock_code = stock_name_to_code(stock_name)
     df = crawling()
-    #print(df)
+    print(df)
     sort_df = sum(df)
+    print(sort_df)
 
     sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
     sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
@@ -172,60 +172,56 @@ def ma():
 
     return send_file(a, mimetype='image/png')
 
-@app.route('/1', methods=['POST', 'GET'])
+@app.route('/', methods=['POST', 'GET'])
 def a():
+    sma_expect = []
+    sma_expect_profit = []
+    expect = ''
     if request.method == 'POST':
-        stock_name = request.form.get('stock_name')
+        # stock_name = request.form.get('stock_name')
         sma5_ = request.form.get('sma5')
         sma20_ = request.form.get('sma20')
         sma100_ = request.form.get('sma100')
         upper_ = request.form.get('upper')
         lower_ = request.form.get('lower')
-        print(stock_name)
-        session['stock_name'] = stock_name
+        # print(stock_name)
+        # session['stock_name'] = stock_name
         session['sma5'] = sma5_
         session['sma20'] = sma20_
         session['sma100'] = sma100_
         session['upper'] = upper_
         session['lower'] = lower_
 
-    sma_expect = []
-    sma_expect_profit = []
-    sma5_expect = session.get('sma5_expect', '')
-    sma_expect.append(sma5_expect)
-    sma20_expect = session.get('sma20_expect', '')
-    sma_expect.append(sma20_expect)
-    sma100_expect = session.get('sma100_expect', '')
-    sma_expect.append(sma100_expect)
 
-    sma5_expect_profit = session.get('sma5_expect_profit', '')
-    sma_expect_profit.append(sma5_expect_profit)
-    sma20_expect_profit = session.get('sma20_expect_profit', '')
-    sma_expect_profit.append(sma20_expect_profit)
-    sma100_expect_profit = session.get('sma100_expect_profit', '')
-    sma_expect_profit.append(sma100_expect_profit)
+        sma5_expect = session.get('sma5_expect', '')
+        sma_expect.append(sma5_expect)
+        sma20_expect = session.get('sma20_expect', '')
+        sma_expect.append(sma20_expect)
+        sma100_expect = session.get('sma100_expect', '')
+        sma_expect.append(sma100_expect)
+        
 
-    expect = ''
-    if int(max(sma_expect)) > 0:
-        expect = '매매'
-        if int(max(sma_expect)) == int(sma5_expect):
-            expect += ' 단타'
-        elif int(max(sma_expect)) == int(sma20_expect):
-            expect += ' 스윙'
+        sma5_expect_profit = session.get('sma5_expect_profit', '')
+        sma_expect_profit.append(sma5_expect_profit)
+        sma20_expect_profit = session.get('sma20_expect_profit', '')
+        sma_expect_profit.append(sma20_expect_profit)
+        sma100_expect_profit = session.get('sma100_expect_profit', '')
+        sma_expect_profit.append(sma100_expect_profit)
+
+       
+        if int(max(sma_expect)) > 0:
+            expect = '매매'
+            if int(max(sma_expect)) == int(sma5_expect):
+                expect += ' 단타'
+            elif int(max(sma_expect)) == int(sma20_expect):
+                expect += ' 스윙'
+            else:
+                expect += ' 장타'
         else:
-            expect += ' 장타'
-    else:
-        expect = '매도'
+            expect = '매도'
     
     return render_template('a_2.html',lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect)
     # return render_template('a_2.html')
-
-
-
-@app.route('/')
-def home():
-    return render_template('a.html')
-
 
 
 if __name__ == '__main__':
