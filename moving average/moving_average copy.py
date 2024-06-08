@@ -48,7 +48,7 @@ pd.set_option('display.max_rows', None)
 pd.options.display.float_format = '{:,.0f}'.format
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-while 1:
+while 1 :
     stock_name = input('종목 입력:')
     stock_code = stock_name_to_code(stock_name)
     if stock_code != 0:
