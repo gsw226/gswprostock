@@ -118,39 +118,40 @@ def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
         lower = mpf.make_addplot(sort_df['lower'],type='line',color = 'y', width=0.7, alpha=1)
         addplt.append(lower)
     mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(13,6),savefig = a)
-    
+
     return a
 
 
 @app.route('/ma')
 def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
     if stock_name != '' and stock_name != 0:
-        print("STOCKNAME:",stock_name)
-        stock_code = stock_name_to_code(stock_name)
-        df = crawling(stock_code)
-        # print(df)
-        sort_df = sum(df)
-        print(sort_df)
-        sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
-        sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
-        sma100_expect= calculate_expected(sort_df['sma100'],100, degree=5)
-        print(sma5_expect,sma20_expect,sma100_expect)
+        # print("STOCKNAME:",stock_name)
+        # stock_code = stock_name_to_code(stock_name)
+        # df = crawling(stock_code)
+        # sort_df = sum(df)
+        # print(sort_df)
+        # sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
+        # sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
+        # sma100_expect= calculate_expected(sort_df['sma100'],100, degree=5)
+        # print(sma5_expect,sma20_expect,sma100_expect)
         
-        sma5_expect_profit = sma5_expect - df['close'].iloc[0]
-        sma20_expect_profit = sma20_expect - df['close'].iloc[0]
-        sma100_expect_profit = sma100_expect - df['close'].iloc[0]
-        print(sma5_expect_profit,sma20_expect_profit,sma100_expect_profit)
+        # sma5_expect_profit = sma5_expect - df['close'].iloc[0]
+        # sma20_expect_profit = sma20_expect - df['close'].iloc[0]
+        # sma100_expect_profit = sma100_expect - df['close'].iloc[0]
+        # print(sma5_expect_profit,sma20_expect_profit,sma100_expect_profit)
 
-        session['sma5_expect'] = sma5_expect
-        session['sma20_expect'] = sma20_expect
-        session['sma100_expect'] = sma100_expect
+        # session['sma5_expect'] = sma5_expect
+        # session['sma20_expect'] = sma20_expect
+        # session['sma100_expect'] = sma100_expect
 
-        session['sma5_expect_profit'] = sma5_expect_profit
-        session['sma20_expect_profit'] = sma20_expect_profit
-        session['sma100_expect_profit'] = sma100_expect_profit
+        # session['sma5_expect_profit'] = sma5_expect_profit
+        # session['sma20_expect_profit'] = sma20_expect_profit
+        # session['sma100_expect_profit'] = sma100_expect_profit
 
         a = make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_)
         a.seek(0)
+        print('aaaaa')
+        print(a.read)
         return a.read()
     return "<div>Not found File</div>"
 
@@ -174,7 +175,7 @@ def a():
         upper_ = request.form.get('upper')
         lower_ = request.form.get('lower')
         if stock_name != '':
-            stock_code = stock_name_to_code('삼성전자')
+            stock_code = stock_name_to_code(stock_name)
             df = crawling(stock_code)
             sort_df = sum(df)   
             sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
@@ -195,19 +196,22 @@ def a():
             sma_expect_profit.append(sma100_expect_profit)
             print(sma_expect)
             if not(sma_expect[0] =='' and sma_expect[1]=='' and sma_expect[2]==''):
-                if int(max(sma_expect)) > 0:
+                if int(max(sma_expect_profit)) > 0:
                     expect = '매매'
-                    if int(max(sma_expect)) == int(sma5_expect):
+                    if int(max(sma_expect_profit)) == int(sma5_expect_profit):
                         expect += ' 단타'
-                    elif int(max(sma_expect)) == int(sma20_expect):
+                    elif int(max(sma_expect_profit)) == int(sma20_expect_profit):
                         expect += ' 스윙'
                     else:
                         expect += ' 장타'
                 else:
                     expect = '매도'
     img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
+    if type(img) != bytes:
+        img = img.encode('utf-8')
     if img != '':
         img = base64.b64encode(img).decode('utf-8')
+
     return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect)
 
 

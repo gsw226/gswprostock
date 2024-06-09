@@ -6,27 +6,31 @@
 		<title>강상우</title>
 		<style>
 			body {
+				background-color: rgb(54,54,54);
         		margin: 0;
+				border: 5px solid rgb(54,54,54);
+				/* border-color: rgb(54,54,54); */
 				display: flex;
 				justify-content: space-between;
 			}
 			.container {
+				position:fixed;
+				color: white;
         		width: fit-content;
 				display: flex;
 				flex-direction: column;
-				background-color: red;
-				align-items: left;
+				background-color: rgb(54,54,54);
 				z-index: 100;
 			}
 			.container form {
 				z-index: 100;
-				background-color: rgb(95, 198, 198);  
+				background-color: rgb(54,54,54);  
 			}
 			img {
 				position:fixed;
-				top:0;
-				left:0;        
-				background-color: blue;
+				top:5px;
+				left:5px;
+				background-color: rgb(54,54,54);
 			}
 			.container h2{
 				text-align: center;
@@ -71,7 +75,7 @@
 			{% endif %}
 		</div>
 		{%if imgdata %}
-		<img src="data:image/png;base64,{{ imgdata }}" alt="Stock Chart">
+		<img src="data:image/png;base64,{{ imgdata }}">
 		{%endif%}
 	</body>
 </html>
