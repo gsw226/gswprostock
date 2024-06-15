@@ -212,8 +212,7 @@ def a():
     if img != '':
         img = base64.b64encode(img).decode('utf-8')
 
-    return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect)
-
+    return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
 
 if __name__ == '__main__':
     app.run(debug=True)
