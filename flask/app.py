@@ -1,4 +1,7 @@
+from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, send_file, request, session
+from flask_migrate import Migrate
+db = SQLAlchemy()
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
@@ -13,7 +16,19 @@ import base64
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'my_secret_key'
+# app.config['SECRET_KEY'] = 'my_secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(120), nullable=False)
+    password = db.Column(db.String(80), nullable=False)
+    balance = db.Column(db.Integer, nullable=False)
+with app.app_context():
+    db.create_all()
 
 def stock_name_to_code(stock_name):
     ticker_list = stock.get_market_ticker_list()    
@@ -174,45 +189,64 @@ def a():
         sma100_ = request.form.get('sma100')
         upper_ = request.form.get('upper')
         lower_ = request.form.get('lower')
-        if stock_name != '':
-            stock_code = stock_name_to_code(stock_name)
-            df = crawling(stock_code)
-            sort_df = sum(df)   
-            sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
-            sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
-            sma100_expect= calculate_expected(sort_df['sma100'],100, degree=5)
-            print(sma5_expect,sma20_expect,sma100_expect)
+       
+        login_email = request.form['login_email']
+        login_password = request.form['login_password']
+        user = User.query.filter_by(email=login_email).first()
+        print(user.email, login_email ,login_password)
+        if user.password == login_password:
+            if stock_name != '':
+                stock_code = stock_name_to_code(stock_name)
+                df = crawling(stock_code)
+                sort_df = sum(df)   
+                sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
+                sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
+                sma100_expect= calculate_expected(sort_df['sma100'],100, degree=5)
+                print(sma5_expect,sma20_expect,sma100_expect)
+                
+                sma5_expect_profit = sma5_expect - df['close'].iloc[0]
+                sma20_expect_profit = sma20_expect - df['close'].iloc[0]
+                sma100_expect_profit = sma100_expect - df['close'].iloc[0]
+
+                sma_expect.append(sma5_expect)
+                sma_expect.append(sma20_expect)
+                sma_expect.append(sma100_expect)
             
-            sma5_expect_profit = sma5_expect - df['close'].iloc[0]
-            sma20_expect_profit = sma20_expect - df['close'].iloc[0]
-            sma100_expect_profit = sma100_expect - df['close'].iloc[0]
-
-            sma_expect.append(sma5_expect)
-            sma_expect.append(sma20_expect)
-            sma_expect.append(sma100_expect)
-        
-            sma_expect_profit.append(sma5_expect_profit)
-            sma_expect_profit.append(sma20_expect_profit)
-            sma_expect_profit.append(sma100_expect_profit)
-            print(sma_expect)
-            if not(sma_expect[0] =='' and sma_expect[1]=='' and sma_expect[2]==''):
-                if int(max(sma_expect_profit)) > 0:
-                    expect = '매매'
-                    if int(max(sma_expect_profit)) == int(sma5_expect_profit):
-                        expect += ' 단타'
-                    elif int(max(sma_expect_profit)) == int(sma20_expect_profit):
-                        expect += ' 스윙'
+                sma_expect_profit.append(sma5_expect_profit)
+                sma_expect_profit.append(sma20_expect_profit)
+                sma_expect_profit.append(sma100_expect_profit)
+                print(sma_expect)
+                if not(sma_expect[0] =='' and sma_expect[1]=='' and sma_expect[2]==''):
+                    if int(max(sma_expect_profit)) > 0:
+                        expect = '매매'
+                        if int(max(sma_expect_profit)) == int(sma5_expect_profit):
+                            expect += ' 단타'
+                        elif int(max(sma_expect_profit)) == int(sma20_expect_profit):
+                            expect += ' 스윙'
+                        else:
+                            expect += ' 장타'
                     else:
-                        expect += ' 장타'
-                else:
-                    expect = '매도'
-    img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
-    if type(img) != bytes:
-        img = img.encode('utf-8')
-    if img != '':
-        img = base64.b64encode(img).decode('utf-8')
+                        expect = '매도'
+            img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
+            if type(img) != bytes:
+                img = img.encode('utf-8')
+            if img != '':
+                img = base64.b64encode(img).decode('utf-8')
 
-    return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
+            return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
+        else:
+            return '로그인 실패'
+
+@app.route('/login', methods=['POST','GET'])
+def login():
+    email = request.form['email']
+    password = request.form['password']
+    balance = int(request.form['balance'])
+    new = User(email = email,password=password,balance=balance)
+    db.session.add(new)
+    db.session.commit()
+    return render_template('a_2.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
