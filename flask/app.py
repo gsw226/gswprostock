@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, render_template, send_file, request, session
+from flask import Flask, render_template, send_file, request, session, redirect
 from flask_migrate import Migrate
 db = SQLAlchemy()
 import pandas as pd
@@ -16,7 +16,7 @@ import base64
 
 
 app = Flask(__name__)
-# app.config['SECRET_KEY'] = 'my_secret_key'
+app.config['SECRET_KEY'] = 'my_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -26,7 +26,6 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False)
     password = db.Column(db.String(80), nullable=False)
-    balance = db.Column(db.Integer, nullable=False)
 with app.app_context():
     db.create_all()
 
@@ -81,17 +80,16 @@ def crawling(stock_code):
     for page in range(1,31):
         page_url = '{}&page={}'.format(sise_url, page)
         response = requests.get(page_url, headers=headers)
-        print("RESPONSE", response.text)
         if response.status_code != 200:
             print(f'Failed to retrieve data from page {page}')
         html = bs(response.text, 'html.parser')
         html_table = html.select("table")
         table = pd.read_html(str(html_table))
+        print(table)
         df = pd.concat([df, table[0].dropna()])
     df = df.reset_index(drop=True)
-    print("REINDEX\n",df)
     df.drop(columns=['전일비'], inplace=True)
-    df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"}) 
+    df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"})
     return df
 
 def sum(df):
@@ -140,29 +138,6 @@ def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
 @app.route('/ma')
 def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
     if stock_name != '' and stock_name != 0:
-        # print("STOCKNAME:",stock_name)
-        # stock_code = stock_name_to_code(stock_name)
-        # df = crawling(stock_code)
-        # sort_df = sum(df)
-        # print(sort_df)
-        # sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
-        # sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
-        # sma100_expect= calculate_expected(sort_df['sma100'],100, degree=5)
-        # print(sma5_expect,sma20_expect,sma100_expect)
-        
-        # sma5_expect_profit = sma5_expect - df['close'].iloc[0]
-        # sma20_expect_profit = sma20_expect - df['close'].iloc[0]
-        # sma100_expect_profit = sma100_expect - df['close'].iloc[0]
-        # print(sma5_expect_profit,sma20_expect_profit,sma100_expect_profit)
-
-        # session['sma5_expect'] = sma5_expect
-        # session['sma20_expect'] = sma20_expect
-        # session['sma100_expect'] = sma100_expect
-
-        # session['sma5_expect_profit'] = sma5_expect_profit
-        # session['sma20_expect_profit'] = sma20_expect_profit
-        # session['sma100_expect_profit'] = sma100_expect_profit
-
         a = make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_)
         a.seek(0)
         print('aaaaa')
@@ -182,22 +157,20 @@ def a():
     upper_ = 0
     lower_ = 0
     sort_df = pd.DataFrame
-    if request.method == 'POST':
-        stock_name = request.form.get('stock_name')
-        sma5_ = request.form.get('sma5')
-        sma20_ = request.form.get('sma20')
-        sma100_ = request.form.get('sma100')
-        upper_ = request.form.get('upper')
-        lower_ = request.form.get('lower')
-       
-        login_email = request.form['login_email']
-        login_password = request.form['login_password']
-        user = User.query.filter_by(email=login_email).first()
-        print(user.email, login_email ,login_password)
-        if user.password == login_password:
+    uid = session.get('uid','')
+    print(uid)
+    if uid != '':
+        if request.method == 'POST':
+            stock_name = request.form.get('stock_name')
+            sma5_ = request.form.get('sma5')
+            sma20_ = request.form.get('sma20')
+            sma100_ = request.form.get('sma100')
+            upper_ = request.form.get('upper')
+            lower_ = request.form.get('lower')  
             if stock_name != '':
                 stock_code = stock_name_to_code(stock_name)
                 df = crawling(stock_code)
+                print(df)
                 sort_df = sum(df)   
                 sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
                 sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
@@ -232,21 +205,43 @@ def a():
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-
             return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
         else:
-            return '로그인 실패'
+            return render_template('a_2.html')
+    else:
+        return redirect('/sign')
+    
+@app.route('/sign', methods=['POST','GET']) # 이메일, 비밀번호, 잔고 db로 전송
+def sign():
+    print("SIGN")
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        print(email,password)
+        if email == '' or password == '':
+            return render_template('sign.html')
+        new = User(email = email, password=password)
+        db.session.add(new)
+        db.session.commit()
+        return redirect('/login')
+    else:
+        return render_template('sign.html')
 
-@app.route('/login', methods=['POST','GET'])
+
+@app.route('/login', methods=['POST','GET']) # 이메일, 비밀번호, 잔고 db로 전송
 def login():
-    email = request.form['email']
-    password = request.form['password']
-    balance = int(request.form['balance'])
-    new = User(email = email,password=password,balance=balance)
-    db.session.add(new)
-    db.session.commit()
-    return render_template('a_2.html')
-
+    if request.method == 'POST':
+        print("POST")
+        login_email = request.form['login_email']
+        login_password = request.form['login_password']
+        user = User.query.filter_by(email=login_email).first()
+        if user.email == login_email:
+            if user.password == login_password:
+                session['uid'] = login_email
+                print(login_email)
+                return redirect('/')
+    elif request.method=='GET':  
+        return render_template('login.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
