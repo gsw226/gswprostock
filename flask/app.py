@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, render_template, send_file, request, session, redirect
+from flask import Flask, render_template, request, session, redirect
 from flask_migrate import Migrate
 db = SQLAlchemy()
 import pandas as pd
@@ -10,7 +10,6 @@ import matplotlib
 matplotlib.use('Agg')
 import mplfinance as mpf
 from io import BytesIO
-from pykrx import stock
 from numpy.polynomial.polynomial import Polynomial
 import base64
 
@@ -24,19 +23,27 @@ migrate = Migrate(app, db)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    email = db.Column(db.String(120), nullable=False)
-    password = db.Column(db.String(80), nullable=False)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    password = db.Column(db.String(80), nullable=False, unique=True)
 with app.app_context():
     db.create_all()
 
 def stock_name_to_code(stock_name):
-    ticker_list = stock.get_market_ticker_list()    
-    for code in ticker_list:
-        name = stock.get_market_ticker_name(code)
-        if name == stock_name:
-            return code
-    else:
-        return 0
+    ticker_list = pd.read_csv('/Users/gangsang-u/Desktop/GitHub/gsw226-s_file/flask/stock.csv')
+    c=0
+    ticker_list = ticker_list.rename(columns={'단축코드':'code','한글 종목명':'name','한글 종목약명':'short_name'})
+    for code in ticker_list['short_name']:
+        if stock_name == code:
+            print("C: ", c)
+            print(ticker_list.iloc[c, 0])
+            stock_code = ticker_list.iloc[c, 0]
+            stock_str = str(stock_code)
+            if len(stock_str) < 6:
+                stock_str = stock_str.zfill(6)
+            return stock_str
+        else:
+            c += 1
+    return 0
 
 def approximation(df, degree=5):
     x = list(range(len(df)))
@@ -76,7 +83,8 @@ def crawling(stock_code):
     warnings.simplefilter(action='ignore', category=FutureWarning)
     headers = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36'}
     df = pd.DataFrame()
-    sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'    
+    sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'
+    # sise_url = f'https://finance.naver.com/item/sise_day.nhn?code=005930'
     for page in range(1,31):
         page_url = '{}&page={}'.format(sise_url, page)
         response = requests.get(page_url, headers=headers)
@@ -169,7 +177,11 @@ def a():
             lower_ = request.form.get('lower')  
             if stock_name != '':
                 stock_code = stock_name_to_code(stock_name)
+                print(stock_code)
+                stock_code = str(stock_code)
+                print(stock_code)
                 df = crawling(stock_code)
+                # df = crawling()
                 print(df)
                 sort_df = sum(df)   
                 sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)

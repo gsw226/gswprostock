@@ -12,8 +12,8 @@ def add_candidates():
 def collect_votes(candidates):
     num_voters = int(input("투표자 수를 입력하세요: "))
     votes = {candidate: 0 for candidate in candidates}
-    
     print("후보자 목록:")
+    
     for idx, candidate in enumerate(candidates):
         print(f"{idx + 1}. {candidate}")
 

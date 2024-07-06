@@ -2,14 +2,35 @@
 <html>
     <head>
         <title>sign up</title>
+        <style>
+            body {
+            background-color: rgb(54,54,54);
+            margin: 0;
+            border: 5px solid rgb(54,54,54);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* viewport height 설정 */
+        }
+        .container {
+            color:aliceblue;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        </style>
     </head>
     <body>
-        <form action="/sign" method= "post">
-            <input type="text" name="email" placeholder="email">
-            <br/>
-            <input type="text" name="password" placeholder="password">
-            <br/>
-            <button id="submit" type="submit">Submit</button>
+        <div class="container">
+            <form action="/sign" method= "post">
+                <div>sign up</div>
+                <input type="text" name="email" placeholder="email">
+                <br/>
+                <input type="text" name="password" placeholder="password">
+                <br/>
+                <button id="submit" type="submit">Submit</button>
+        </div>
         </form>
     </body>
 </html>
