@@ -217,7 +217,8 @@ def a():
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-            return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
+            dflst_y = sort_df['close'].tolist()
+            return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,dflst_y = dflst_y)
         else:
             return render_template('a_2.html')
     else:
