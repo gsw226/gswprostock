@@ -83,15 +83,21 @@
 		{%endif%}
 		<!-- <canvas id="myChart"></canvas>
             <script>
-                const close = {{ dflst_y | tojson }};
+                const votes = '{{ dflst_y }}';
+				var x = '{{ dflst_x }}';
+				x = x.replace(/&#39;/g, '\'');
+				x = x.replace(/-/g, ':');
+				console.log(x);
+                var json = JSON.parse(votes);
+				var x_column = JSON.parse(x);
                 const ctx = document.getElementById('myChart');
                 new Chart(ctx, {
                   type: 'line',
                   data: {
-                    labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+                    labels: x_column,
                     datasets: [{
                       label: '# of Votes',
-                      data: close,
+                      data: json,
                       borderWidth: 1
                     }]
                   },

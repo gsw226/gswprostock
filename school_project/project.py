@@ -9,15 +9,30 @@ def add_candidates():
             candidates.append(candidate_name)
     return candidates
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def collect_votes(candidates):
     num_voters = int(input("투표자 수를 입력하세요: "))
     votes = {candidate: 0 for candidate in candidates}
     print("후보자 목록:")
-    
-    for idx, candidate in enumerate(candidates):
-        print(f"{idx + 1}. {candidate}")
+    c = 1
+    for candidate in candidates:
+        print(f"{c}. {candidate}")
+        c+=1  #c=c+1
 
-    for _ in range(num_voters):
+    for a in range(num_voters):
         while True:
             try:
                 vote = int(input("투표할 후보자의 번호를 입력하세요: ")) - 1

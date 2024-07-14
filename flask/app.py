@@ -12,6 +12,7 @@ import mplfinance as mpf
 from io import BytesIO
 from numpy.polynomial.polynomial import Polynomial
 import base64
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -43,7 +44,7 @@ def stock_name_to_code(stock_name):
             return stock_str
         else:
             c += 1
-    return 0
+    return 0    
 
 def approximation(df, degree=5):
     x = list(range(len(df)))
@@ -108,7 +109,7 @@ def sum(df):
 
     df['date'] = pd.to_datetime(df['date'], format=date_format)
     df.set_index('date',inplace=True)
-    # df['날짜_정수'] = df['date'].dt.strftime('%Y%m%d').astype(int)
+    sort_df['int_date'] = df['date'].dt.strftime('%Y%m%d').astype(int)
 
     sort_df['sma5'] = sort_df['close'].rolling(window=5).mean()
     sort_df['sma20'] = sort_df['close'].rolling(window=20).mean()
@@ -117,6 +118,7 @@ def sum(df):
     sort_df['stddev'] = sort_df['close'].rolling(window=20).std()
     sort_df['upper'] = sort_df['sma20'] + (sort_df['stddev']*2)
     sort_df['lower'] = sort_df['sma20'] - (sort_df['stddev']*2)
+    print(sort_df)
     return sort_df
 
 def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
@@ -182,7 +184,7 @@ def a():
                 print(stock_code)
                 df = crawling(stock_code)
                 # df = crawling()
-                print(df)
+                print(sort_df)
                 sort_df = sum(df)   
                 sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
                 sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
@@ -218,13 +220,17 @@ def a():
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
             dflst_y = sort_df['close'].tolist()
-            return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,dflst_y = dflst_y)
+            # print(dflst_y)
+            dflst_x = sort_df.index.tolist()
+            dflst_x = [dt.strftime("%Y-%m-%d") for dt in dflst_x]
+            # print(dflst_x)
+            return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,dflst_y = dflst_y,dflst_x=dflst_x)
         else:
             return render_template('a_2.html')
     else:
         return redirect('/sign')
     
-@app.route('/sign', methods=['POST','GET']) # 이메일, 비밀번호, 잔고 db로 전송
+@app.route('/sign', methods=['POST','GET']) # 이메일, 비밀번호 db로 전송
 def sign():
     print("SIGN")
     if request.method == 'POST':
