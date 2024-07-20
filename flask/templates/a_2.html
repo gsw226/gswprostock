@@ -59,15 +59,25 @@
 				<br/>
 				<input type="checkbox" name="lower" value="lower">lower</input>
 				<br/>
+				<input type="text" name="date" placeholder="원하는 date"></input>
+				<br/>	
 				<button id="submit" type="submit">Submit</button>
 			</form>
+			{%if date_data %}
+				<p>{{ date }}의 data</p>
+				<p>close: {{ date_data[0] }}</p>
+				<p>open: {{ date_data[1] }}</p>
+				<p>high: {{ date_data[2] }}</p>
+				<p>low: {{ date_data[3] }}</p>
+				<p>volume: {{ date_data[4] }}</p>
+			{% endif %}
 			{% if lst1 %}
 				<h2>명일 예상 종가</h2>
 				<p>sma5: {{ lst1[0] }}원</p>
 				<p>sma20: {{ lst1[1] }}원</p>
 				<p>sma100: {{ lst1[2] }}원</p>
 			{% endif %}
-			{% if lst2 %}
+			{% if lst2 %}s
 				<h2>명일 종가에 대한 순수익</h2>
 				<p>sma5: {{ lst2[0] }}원</p>
 				<p>sma20: {{ lst2[1] }}원</p>
@@ -83,32 +93,86 @@
 		{%endif%}
 		<!-- <canvas id="myChart"></canvas>
             <script>
-                const votes = '{{ dflst_y }}';
-				var x = '{{ dflst_x }}';
-				x = x.replace(/&#39;/g, '\'');
-				x = x.replace(/-/g, ':');
-				console.log(x);
-                var json = JSON.parse(votes);
-				var x_column = JSON.parse(x);
-                const ctx = document.getElementById('myChart');
+				fetch('/data')
+            .then(response => response.json())
+            .then(jsonData => {
+                // 캔들 차트 데이터 변환
+                const chartData = jsonData.map(entry => ({
+                    t: entry.date,
+                    o: entry.open,
+                    h: entry.high,
+                    l: entry.low,
+                    c: entry.close
+                }));
+				const ctx = document.getElementById('candleChart').getContext('2d');
+
                 new Chart(ctx, {
-                  type: 'line',
-                  data: {
-                    labels: x_column,
-                    datasets: [{
-                      label: '# of Votes',
-                      data: json,
-                      borderWidth: 1
-                    }]
-                  },
-                  options: {
-                    scales: {
-                      y: {
-                        beginAtZero: true
-                      }
+                    type: 'candlestick',
+                    data: {
+                        datasets: [
+                            {
+                                label: 'Stock Price',
+                                data: chartData,
+                                borderColor: 'black',
+                                backgroundColor: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            {
+                                label: 'SMA5',
+                                data: sma5Data,
+                                type: 'line',
+                                borderColor: 'blue',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Volume',
+                                data: volumeData,
+                                type: 'bar',
+                                backgroundColor: 'rgba(0, 123, 255, 0.3)',
+                                yAxisID: 'volume'
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Price'
+                                }
+                            },
+                            volume: {
+                                type: 'linear',
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: 'Volume'
+                                },
+                                grid: {
+                                    drawOnChartArea: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        }
                     }
-                  }
                 });
-              </script> -->
+            })
+            .catch(error => console.error('Error fetching data:', error));
+			</script> -->
 	</body>
 </html>

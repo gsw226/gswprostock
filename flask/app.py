@@ -1,3 +1,4 @@
+import json
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request, session, redirect
 from flask_migrate import Migrate
@@ -30,7 +31,7 @@ with app.app_context():
     db.create_all()
 
 def stock_name_to_code(stock_name):
-    ticker_list = pd.read_csv('/Users/gangsang-u/Desktop/GitHub/gsw226-s_file/flask/stock.csv')
+    ticker_list = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv')
     c=0
     ticker_list = ticker_list.rename(columns={'단축코드':'code','한글 종목명':'name','한글 종목약명':'short_name'})
     for code in ticker_list['short_name']:
@@ -109,7 +110,7 @@ def sum(df):
 
     df['date'] = pd.to_datetime(df['date'], format=date_format)
     df.set_index('date',inplace=True)
-    sort_df['int_date'] = df['date'].dt.strftime('%Y%m%d').astype(int)
+    # sort_df['int_date'] = df['date'].dt.strftime('%Y%m%d').astype(int)
 
     sort_df['sma5'] = sort_df['close'].rolling(window=5).mean()
     sort_df['sma20'] = sort_df['close'].rolling(window=20).mean()
@@ -176,7 +177,8 @@ def a():
             sma20_ = request.form.get('sma20')
             sma100_ = request.form.get('sma100')
             upper_ = request.form.get('upper')
-            lower_ = request.form.get('lower')  
+            lower_ = request.form.get('lower') 
+            date = request.form.get('date')
             if stock_name != '':
                 stock_code = stock_name_to_code(stock_name)
                 print(stock_code)
@@ -219,12 +221,16 @@ def a():
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-            dflst_y = sort_df['close'].tolist()
-            # print(dflst_y)
-            dflst_x = sort_df.index.tolist()
-            dflst_x = [dt.strftime("%Y-%m-%d") for dt in dflst_x]
-            # print(dflst_x)
-            return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,dflst_y = dflst_y,dflst_x=dflst_x)
+            json_data = sort_df.reset_index().to_dict(orient='records')
+
+            if date != None:
+                # print(sort_df.loc[date],'close','open','high','low')
+                date_data = sort_df.loc[date,'close','open','high','low','volume']
+                print(date_data)
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,date_data=date_data,date=date,json_data=json_data)
+            else: 
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,date_data =0,json_data=json_data)
+
         else:
             return render_template('a_2.html')
     else:
