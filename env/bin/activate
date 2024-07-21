@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/Users/gangsang-u/Desktop/GitHub/gsw226-s_file/env"
+VIRTUAL_ENV="/Users/gangsang-u/Documents/GitHub/gsw226-s_file/env"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

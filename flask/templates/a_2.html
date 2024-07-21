@@ -59,25 +59,17 @@
 				<br/>
 				<input type="checkbox" name="lower" value="lower">lower</input>
 				<br/>
-				<input type="text" name="date" placeholder="원하는 date"></input>
+				<input type="checkbox" name="favor" value="favor">즐겨찾기</input>
 				<br/>	
 				<button id="submit" type="submit">Submit</button>
 			</form>
-			{%if date_data %}
-				<p>{{ date }}의 data</p>
-				<p>close: {{ date_data[0] }}</p>
-				<p>open: {{ date_data[1] }}</p>
-				<p>high: {{ date_data[2] }}</p>
-				<p>low: {{ date_data[3] }}</p>
-				<p>volume: {{ date_data[4] }}</p>
-			{% endif %}
 			{% if lst1 %}
 				<h2>명일 예상 종가</h2>
 				<p>sma5: {{ lst1[0] }}원</p>
 				<p>sma20: {{ lst1[1] }}원</p>
 				<p>sma100: {{ lst1[2] }}원</p>
 			{% endif %}
-			{% if lst2 %}s
+			{% if lst2 %}
 				<h2>명일 종가에 대한 순수익</h2>
 				<p>sma5: {{ lst2[0] }}원</p>
 				<p>sma20: {{ lst2[1] }}원</p>

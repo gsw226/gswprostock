@@ -30,6 +30,13 @@ class User(db.Model):
 with app.app_context():
     db.create_all()
 
+class favorite(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    stock_name = db.Column(db.String(80), nullable=False, unique=True)
+with app.app_context():
+    db.create_all()
+
 def stock_name_to_code(stock_name):
     ticker_list = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv')
     c=0
@@ -178,7 +185,8 @@ def a():
             sma100_ = request.form.get('sma100')
             upper_ = request.form.get('upper')
             lower_ = request.form.get('lower') 
-            date = request.form.get('date')
+            favor = request.form.get('favor') 
+            # print(favor)
             if stock_name != '':
                 stock_code = stock_name_to_code(stock_name)
                 print(stock_code)
@@ -221,15 +229,12 @@ def a():
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-            json_data = sort_df.reset_index().to_dict(orient='records')
-
-            if date != None:
-                # print(sort_df.loc[date],'close','open','high','low')
-                date_data = sort_df.loc[date,'close','open','high','low','volume']
-                print(date_data)
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,date_data=date_data,date=date,json_data=json_data)
+                new = favorite(email=uid,stock_name=stock_name)
+                db.session.add(new)
+                db.session.commit()
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
             else: 
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,date_data =0,json_data=json_data)
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
 
         else:
             return render_template('a_2.html')
