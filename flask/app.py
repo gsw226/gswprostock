@@ -13,6 +13,8 @@ import mplfinance as mpf
 from io import BytesIO
 from numpy.polynomial.polynomial import Polynomial
 import base64
+import schedule
+import time
 from datetime import datetime
 
 
@@ -165,6 +167,7 @@ def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
 
 @app.route('/', methods=['POST', 'GET'])
 def a():
+    schedule.every().day.at("00:00").do(a)
     sma_expect = []
     sma_expect_profit = []
     expect = ''
