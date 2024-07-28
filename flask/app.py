@@ -26,14 +26,14 @@ migrate = Migrate(app, db)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
-    password = db.Column(db.String(80), nullable=False, unique=True)
+    password = db.Column(db.String(80), nullable=False)
 with app.app_context():
     db.create_all()
 
 class favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    email = db.Column(db.String(120), nullable=False, unique=True)
-    stock_name = db.Column(db.String(80), nullable=False, unique=True)
+    email = db.Column(db.String(120), nullable=False)
+    stock_name = db.Column(db.String(80), nullable=False)
 with app.app_context():
     db.create_all()
 
@@ -43,8 +43,8 @@ def stock_name_to_code(stock_name):
     ticker_list = ticker_list.rename(columns={'단축코드':'code','한글 종목명':'name','한글 종목약명':'short_name'})
     for code in ticker_list['short_name']:
         if stock_name == code:
-            print("C: ", c)
-            print(ticker_list.iloc[c, 0])
+            # print("C: ", c)
+            # print(ticker_list.iloc[c, 0])
             stock_code = ticker_list.iloc[c, 0]
             stock_str = str(stock_code)
             if len(stock_str) < 6:
@@ -102,7 +102,7 @@ def crawling(stock_code):
         html = bs(response.text, 'html.parser')
         html_table = html.select("table")
         table = pd.read_html(str(html_table))
-        print(table)
+        # print(table)
         df = pd.concat([df, table[0].dropna()])
     df = df.reset_index(drop=True)
     df.drop(columns=['전일비'], inplace=True)
@@ -158,8 +158,8 @@ def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
     if stock_name != '' and stock_name != 0:
         a = make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_)
         a.seek(0)
-        print('aaaaa')
-        print(a.read)
+        # print('aaaaa')
+        # print(a.read)
         return a.read()
     return "<div>Not found File</div>"
 
@@ -176,6 +176,7 @@ def a():
     lower_ = 0
     sort_df = pd.DataFrame
     uid = session.get('uid','')
+    print('aaaaaaa')
     print(uid)
     if uid != '':
         if request.method == 'POST':
@@ -186,14 +187,11 @@ def a():
             upper_ = request.form.get('upper')
             lower_ = request.form.get('lower') 
             favor = request.form.get('favor') 
-            # print(favor)
+            print(favor)
             if stock_name != '':
                 stock_code = stock_name_to_code(stock_name)
-                print(stock_code)
                 stock_code = str(stock_code)
-                print(stock_code)
                 df = crawling(stock_code)
-                # df = crawling()
                 print(sort_df)
                 sort_df = sum(df)   
                 sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
@@ -225,13 +223,16 @@ def a():
                     else:
                         expect = '매도'
             img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
+            if favor != None:
+                print('1111111111')
+                print(uid)
+                new = favorite(email=uid,stock_name=stock_name)
+                db.session.add(new)
+                db.session.commit()
             if type(img) != bytes:
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-                new = favorite(email=uid,stock_name=stock_name)
-                db.session.add(new)
-                db.session.commit()
                 return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
             else: 
                 return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
