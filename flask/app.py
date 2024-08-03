@@ -151,7 +151,7 @@ def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
         lower = mpf.make_addplot(sort_df['lower'],type='line',color = 'y', width=0.7, alpha=1)
         addplt.append(lower)
     mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(13,6),savefig = a)
-
+    # a.read()
     return a
 
 
@@ -167,6 +167,10 @@ def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
 
 @app.route('/', methods=['POST', 'GET'])
 def a():
+    uid = session.get('uid','')
+    #여기서 세션에 사용자 정보 없으면, 로그인 페이지 리디렉션
+    if uid == None:
+        redirect("/sign")
     schedule.every().day.at("00:00").do(a)
     sma_expect = []
     sma_expect_profit = []
@@ -178,20 +182,34 @@ def a():
     upper_ = 0
     lower_ = 0
     sort_df = pd.DataFrame
-    uid = session.get('uid','')
     print('aaaaaaa')
     print(uid)
     if uid != '':
-        if request.method == 'POST':
-            stock_name = request.form.get('stock_name')
+        # results = favorite.query.filter_by(email=uid).limit(3).all()
+        # results = favorite.query.filter_by(email=uid).first()
+        results = favorite.query.filter_by(email=uid).order_by(favorite.id.desc()).limit(3).all()
+        stock_names = [result.stock_name for result in results]
+        print('stock_names', stock_names)
+        if request.method == 'POST' or stock_names[2] is not None:
+            stock_name = ''
+            if stock_names[2] is not None:
+                stock_name = stock_names[2]
+            else:
+                stock_name = request.form.get('stock_name')
             sma5_ = request.form.get('sma5')
             sma20_ = request.form.get('sma20')
             sma100_ = request.form.get('sma100')
             upper_ = request.form.get('upper')
             lower_ = request.form.get('lower') 
             favor = request.form.get('favor') 
-            print(favor)
+            # print(favor)
             if stock_name != '':
+                if favor != None:
+                    print('1111111111')
+                    print(uid)
+                    new = favorite(email=uid,stock_name=stock_name)
+                    db.session.add(new)
+                    db.session.commit()
                 stock_code = stock_name_to_code(stock_name)
                 stock_code = str(stock_code)
                 df = crawling(stock_code)
@@ -226,17 +244,12 @@ def a():
                     else:
                         expect = '매도'
             img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
-            if favor != None:
-                print('1111111111')
-                print(uid)
-                new = favorite(email=uid,stock_name=stock_name)
-                db.session.add(new)
-                db.session.commit()
+            
             if type(img) != bytes:
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name, stock_names = stock_names)
             else: 
                 return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
 
@@ -247,13 +260,16 @@ def a():
     
 @app.route('/sign', methods=['POST','GET']) # 이메일, 비밀번호 db로 전송
 def sign():
-    print("SIGN")
+    # print("SIGN")
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        print(email,password)
+        gologin = request.form['gologin']
+        if gologin != None:
+            redirect('/login')
+        # print(email,password)
         if email == '' or password == '':
-            return render_template('sign.html')
+            return redirect('sign.html')
         new = User(email = email, password=password)
         db.session.add(new)
         db.session.commit()
@@ -265,14 +281,14 @@ def sign():
 @app.route('/login', methods=['POST','GET']) # 이메일, 비밀번호, 잔고 db로 전송
 def login():
     if request.method == 'POST':
-        print("POST")
+        # print("POST")
         login_email = request.form['login_email']
         login_password = request.form['login_password']
         user = User.query.filter_by(email=login_email).first()
         if user.email == login_email:
             if user.password == login_password:
                 session['uid'] = login_email
-                print(login_email)
+                # print(login_email)
                 return redirect('/')
     elif request.method=='GET':  
         return render_template('login.html')
