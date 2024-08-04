@@ -39,6 +39,25 @@ class favorite(db.Model):
 with app.app_context():
     db.create_all()
 
+class own(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(120), nullable=False)
+    stock_name = db.Column(db.String(80), nullable=False)
+with app.app_context():
+    db.create_all()
+
+class own_detail(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(120), nullable=False)
+    date_time = db.Column(db.Integer, nullable=False)
+    stock_name = db.Column(db.String(80), nullable=False)
+    buy_sell = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    percent = db.Column(db.Real, nullable=False)
+    method = db.Column(db.String(120), nullable=False)
+with app.app_context():
+    db.create_all()
+
 def stock_name_to_code(stock_name):
     ticker_list = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv')
     c=0
@@ -264,10 +283,6 @@ def sign():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        gologin = request.form['gologin']
-        if gologin != None:
-            redirect('/login')
-        # print(email,password)
         if email == '' or password == '':
             return redirect('sign.html')
         new = User(email = email, password=password)
