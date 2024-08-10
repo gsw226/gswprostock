@@ -1,6 +1,6 @@
 import json
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, render_template, request, session, redirect
+from flask import Flask, render_template, request, session, redirect, render_template_string
 from flask_migrate import Migrate
 db = SQLAlchemy()
 import pandas as pd
@@ -16,6 +16,8 @@ import base64
 import schedule
 import time
 from datetime import datetime
+from controller import crawling
+# from test import get_yesterday_close
 
 
 app = Flask(__name__)
@@ -35,7 +37,7 @@ with app.app_context():
 class favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False)
-    stock_name = db.Column(db.String(80), nullable=False)
+    stock_name = db.Column(db.String(80), nullable=False, unique=True)
 with app.app_context():
     db.create_all()
 
@@ -53,7 +55,7 @@ class own_detail(db.Model):
     stock_name = db.Column(db.String(80), nullable=False)
     buy_sell = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Integer, nullable=False)
-    percent = db.Column(db.Real, nullable=False)
+    # percent = db.Column(db.Real, nullable=False)
     method = db.Column(db.String(120), nullable=False)
 with app.app_context():
     db.create_all()
@@ -104,31 +106,6 @@ def calculate_expected(df, sense, degree=5):
     p = approximation(df, degree)
     
     return p(sense)
-
-
-def crawling(stock_code):
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
-    pd.options.display.float_format = '{:,.0f}'.format
-    warnings.simplefilter(action='ignore', category=FutureWarning)
-    headers = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36'}
-    df = pd.DataFrame()
-    sise_url = f'https://finance.naver.com/item/sise_day.nhn?code={stock_code}'
-    # sise_url = f'https://finance.naver.com/item/sise_day.nhn?code=005930'
-    for page in range(1,31):
-        page_url = '{}&page={}'.format(sise_url, page)
-        response = requests.get(page_url, headers=headers)
-        if response.status_code != 200:
-            print(f'Failed to retrieve data from page {page}')
-        html = bs(response.text, 'html.parser')
-        html_table = html.select("table")
-        table = pd.read_html(str(html_table))
-        # print(table)
-        df = pd.concat([df, table[0].dropna()])
-    df = df.reset_index(drop=True)
-    df.drop(columns=['전일비'], inplace=True)
-    df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"})
-    return df
 
 def sum(df):
     sort_df = df.sort_index(ascending=False)
@@ -204,15 +181,15 @@ def a():
     print('aaaaaaa')
     print(uid)
     if uid != '':
-        # results = favorite.query.filter_by(email=uid).limit(3).all()
-        # results = favorite.query.filter_by(email=uid).first()
-        results = favorite.query.filter_by(email=uid).order_by(favorite.id.desc()).limit(3).all()
+        results = favorite.query.filter_by(email=uid).order_by(favorite.id.asc()).limit(3).all()
         stock_names = [result.stock_name for result in results]
         print('stock_names', stock_names)
-        if request.method == 'POST' or stock_names[2] is not None:
-            stock_name = ''
-            if stock_names[2] is not None:
-                stock_name = stock_names[2]
+        if stock_names == None:
+            stock_names = ['0','0','0']
+        if request.method == 'POST':
+            # stock_name[len(stock_names)] = ''
+            if len(stock_names) > 0:
+                stock_name = stock_names[len(stock_names)-1]
             else:
                 stock_name = request.form.get('stock_name')
             sma5_ = request.form.get('sma5')
@@ -271,7 +248,6 @@ def a():
                 return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name, stock_names = stock_names)
             else: 
                 return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
-
         else:
             return render_template('a_2.html')
     else:
@@ -307,6 +283,13 @@ def login():
                 return redirect('/')
     elif request.method=='GET':  
         return render_template('login.html')
+
+@app.route('/list', methods=['POST', 'GET'])
+def list():
+    lst = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv')
+    lst.drop(lst.columns[3],axis=1,inplace=True)
+    lst_table = lst.to_html()
+    return render_template('list.html',table=lst_table)
 
 if __name__ == '__main__':
     app.run(debug=True)

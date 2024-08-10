@@ -1,13 +1,15 @@
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
-def stock_name_to_code(stock_name):
-        if len(stock_str) < 6:
-            stock_str = stock_str.zfill(6)
-            return stock_str
-        else:
-            return 0   
-        
+
+# 주식 이름에서 코드를 추출하는 함수
+def stock_name_to_code(stock_str):
+    if len(stock_str) < 6:
+        return stock_str.zfill(6)
+    else:
+        return stock_str
+
+# 네이버 금융에서 전날 종가를 가져오는 함수
 def get_yesterday_close(tickers):
     close_prices = []
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -48,15 +50,15 @@ def get_yesterday_close(tickers):
 # CSV 파일에서 데이터 읽기
 csv_df = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv')
 
-# 단축코드 열을 리스트로 변환
-codes = csv_df['단축코드'].tolist()
+# 단축코드 열을 수정 (inplace=True로 설정)
+csv_df['단축코드'] = csv_df['단축코드'].apply(stock_name_to_code)
 
 # 종가 데이터 추출
-result = get_yesterday_close(codes)
-# print(result)
+result = get_yesterday_close(csv_df['단축코드'].tolist())
 
-# 결과를 데이터프레임에 저장 (옵션)
+# 결과를 데이터프레임에 저장
 csv_df['어제종가'] = result
 print(csv_df['어제종가'])
 
+# 수정된 데이터프레임을 CSV 파일로 저장
 csv_df.to_csv('stock_data.csv', index=False, encoding='utf-8-sig')
