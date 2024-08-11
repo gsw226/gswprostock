@@ -1,6 +1,7 @@
 import json
+import ssl
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, render_template, request, session, redirect, render_template_string
+from flask import Flask, render_template, request, session, redirect, jsonify
 from flask_migrate import Migrate
 db = SQLAlchemy()
 import pandas as pd
@@ -16,8 +17,16 @@ import base64
 import schedule
 import time
 from datetime import datetime
+import re
+from passlib.hash import pbkdf2_sha256
 from controller import crawling
-# from test import get_yesterday_close
+from controller import stock_name_to_code
+from controller import calculate_expected
+from controller import sum
+from controller import make_plt
+from controller import hash_password
+from controller import check_password
+
 
 
 app = Flask(__name__)
@@ -31,22 +40,16 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
-with app.app_context():
-    db.create_all()
 
 class favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False)
     stock_name = db.Column(db.String(80), nullable=False, unique=True)
-with app.app_context():
-    db.create_all()
 
 class own(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False)
     stock_name = db.Column(db.String(80), nullable=False)
-with app.app_context():
-    db.create_all()
 
 class own_detail(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -59,97 +62,6 @@ class own_detail(db.Model):
     method = db.Column(db.String(120), nullable=False)
 with app.app_context():
     db.create_all()
-
-def stock_name_to_code(stock_name):
-    ticker_list = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv')
-    c=0
-    ticker_list = ticker_list.rename(columns={'단축코드':'code','한글 종목명':'name','한글 종목약명':'short_name'})
-    for code in ticker_list['short_name']:
-        if stock_name == code:
-            # print("C: ", c)
-            # print(ticker_list.iloc[c, 0])
-            stock_code = ticker_list.iloc[c, 0]
-            stock_str = str(stock_code)
-            if len(stock_str) < 6:
-                stock_str = stock_str.zfill(6)
-            return stock_str
-        else:
-            c += 1
-    return 0    
-
-def approximation(df, degree=5):
-    x = list(range(len(df)))
-    y = df.values
-
-    p = Polynomial.fit(x, y, degree)
-    # y = ax^2 + bx^2 + c
-    return p
-
-def calculate_gradient_at_last_point(df, sense, degree=5):
-    df = df[-sense:-1]
-    if len(df) < 2:
-        raise ValueError("DataFrame must contain at least two points.")
-    p = approximation(df, degree)
-    
-    p_derivative = p.deriv()
-   
-    last_point = sense - 1
-    gradient = p_derivative(last_point) / ((max(df) - min(df)) / sense)
-    intercept = p(last_point) - gradient * last_point
-
-    return gradient,intercept
-
-def calculate_expected(df, sense, degree=5):
-    df = df[-sense:-1]
-    if len(df) < 2:
-        raise ValueError("DataFrame must contain at least two points.")
-    p = approximation(df, degree)
-    
-    return p(sense)
-
-def sum(df):
-    sort_df = df.sort_index(ascending=False)
-    date_format = "%Y.%m.%d"
-    sort_df['date'] = pd.to_datetime(sort_df['date'], format=date_format)
-    sort_df.set_index('date',inplace=True)
-
-    df['date'] = pd.to_datetime(df['date'], format=date_format)
-    df.set_index('date',inplace=True)
-    # sort_df['int_date'] = df['date'].dt.strftime('%Y%m%d').astype(int)
-
-    sort_df['sma5'] = sort_df['close'].rolling(window=5).mean()
-    sort_df['sma20'] = sort_df['close'].rolling(window=20).mean()
-    sort_df['sma100'] = sort_df['close'].rolling(window=100).mean()
-    
-    sort_df['stddev'] = sort_df['close'].rolling(window=20).std()
-    sort_df['upper'] = sort_df['sma20'] + (sort_df['stddev']*2)
-    sort_df['lower'] = sort_df['sma20'] - (sort_df['stddev']*2)
-    print(sort_df)
-    return sort_df
-
-def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
-    addplt = []
-    a = BytesIO()
-    
-    if sma5_== 'sma5':
-        sma5 = mpf.make_addplot(sort_df['sma5'],type='line',color = 'r', width=1, alpha=0.5)
-        addplt.append(sma5)
-    if sma20_== 'sma20':
-        sma20 = mpf.make_addplot(sort_df['sma20'],type='line',color = 'b', width=1, alpha=0.5)
-        addplt.append(sma20)
-    if sma100_== 'sma100':
-        sma100 = mpf.make_addplot(sort_df['sma100'],type='line',color = 'g', width=1, alpha=0.5)
-        addplt.append(sma100)
-    if upper_== 'upper':
-        upper = mpf.make_addplot(sort_df['upper'],type='line',color = 'y', width=0.7, alpha=1)
-        addplt.append(upper)
-    if lower_== 'lower':
-        lower = mpf.make_addplot(sort_df['lower'],type='line',color = 'y', width=0.7, alpha=1)
-        addplt.append(lower)
-    mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(13,6),savefig = a)
-    # a.read()
-    return a
-
 
 @app.route('/ma')
 def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
@@ -214,11 +126,18 @@ def a():
                 sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
                 sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
                 sma100_expect= calculate_expected(sort_df['sma100'],100, degree=5)
-                print(sma5_expect,sma20_expect,sma100_expect)
                 
                 sma5_expect_profit = sma5_expect - df['close'].iloc[0]
                 sma20_expect_profit = sma20_expect - df['close'].iloc[0]
                 sma100_expect_profit = sma100_expect - df['close'].iloc[0]
+
+                sma5_expect_profit = round(sma5_expect_profit, 2)
+                sma20_expect_profit = round(sma20_expect_profit, 2)
+                sma100_expect_profit = round(sma100_expect_profit, 2)
+
+                sma5_expect = round(sma5_expect, 2)
+                sma20_expect= round(sma20_expect, 2)
+                sma100_expect= round(sma100_expect, 2)
 
                 sma_expect.append(sma5_expect)
                 sma_expect.append(sma20_expect)
@@ -240,6 +159,8 @@ def a():
                     else:
                         expect = '매도'
             img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
+            print('999999999999')
+            print(stock_code)
             
             if type(img) != bytes:
                 img = img.encode('utf-8')
@@ -253,18 +174,25 @@ def a():
     else:
         return redirect('/sign')
     
-@app.route('/sign', methods=['POST','GET']) # 이메일, 비밀번호 db로 전송
+@app.route('/sign', methods=['POST', 'GET'])  # 이메일, 비밀번호 db로 전송
 def sign():
-    # print("SIGN")
+    password_pattern = r'^(?=.*[!@#$%^&*(),.?":{}|<>])(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).+$'
+    
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        email = request.form.get('email', '')
+        password = request.form.get('password', '')
+        
         if email == '' or password == '':
-            return redirect('sign.html')
-        new = User(email = email, password=password)
-        db.session.add(new)
-        db.session.commit()
-        return redirect('/login')
+            return redirect('/sign')
+        
+        if re.match(password_pattern, password):
+            hashed_password = hash_password(password)
+            new_user = User(email=email, password=hashed_password)
+            db.session.add(new_user)
+            db.session.commit()
+            return render_template('login.html')
+        else:
+            return redirect('/sign')
     else:
         return render_template('sign.html')
 
@@ -277,19 +205,30 @@ def login():
         login_password = request.form['login_password']
         user = User.query.filter_by(email=login_email).first()
         if user.email == login_email:
-            if user.password == login_password:
+            if check_password(login_password,user.password):
                 session['uid'] = login_email
                 # print(login_email)
-                return redirect('/')
-    elif request.method=='GET':  
+                return redirect('/') 
+            else:
+                return render_template('login.html')
+        else:
+            return render_template('login.html')
+    else:
         return render_template('login.html')
+        
 
 @app.route('/list', methods=['POST', 'GET'])
-def list():
-    lst = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv')
-    lst.drop(lst.columns[3],axis=1,inplace=True)
-    lst_table = lst.to_html()
-    return render_template('list.html',table=lst_table)
+def list_stock():
+    try:
+        file_path = '/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv'
+        lst = pd.read_csv(file_path)
+        lst.drop(lst.columns[3], axis=1, inplace=True)
+        lst_table = lst.to_html(classes='table table-striped')
+        return render_template('list.html', table=lst_table)
+    except FileNotFoundError:
+        return "Stock data file not found.", 404
+    except Exception as e:
+        return f"An error occurred: {e}", 500 
 
 if __name__ == '__main__':
     app.run(debug=True)

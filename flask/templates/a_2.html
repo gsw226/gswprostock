@@ -16,32 +16,55 @@
 				/* border-color: rgb(54,54,54); */
 				display: flex;
 				justify-content: space-between;
-				overflow: auto; /* 또는 overflow: scroll; */
+				overflow: scroll; /* 또는 overflow: scroll; */
 			}
+			.greeting {
+				z-index: 100;
+				position: absolute;
+				top: 10px; /* 상단 여백 */
+				left: 20%;
+				transform: translateX(-50%);
+				color: black;
+				font-size: 2em; /* 텍스트 크기 조정 */
+         	}
 			.container {
-				position:fixed;
+				position:absolute;
 				color: white;
         		width: fit-content;
 				display: flex;
 				flex-direction: column;
 				background-color: rgb(54,54,54);
 				z-index: 100;
+				overflow: scroll;
 			}
 			.container form {
 				z-index: 100;
 				background-color: rgb(54,54,54);  
 			}
+			.img-wrapper {
+            position: relative;
+            width: 80vw; /* 이미지가 차지할 너비 (80% 화면 너비) */
+            height: 100vh; /* 이미지가 차지할 높이 (화면 전체 높이) */
+            overflow: hidden;
+			}
 			img {
-				position:fixed;
-				top:5px;
-				left:5px;
-				background-color: rgb(54,54,54);
+            position: absolute;
+            top: 0;
+            left: 20%; /* 이미지 왼쪽으로 20% 이동 */
+            width: 120%;
+			top: 0%;
+			clip-path: inset(0 0 0 20%); /* 왼쪽 20%를 잘라냄 */
+			background-color: rgb(54,54,54);
 			}
 			.container h2{
 				text-align: center;
 			}
 			.container p{
 				text-align: center;
+			}
+			.right{
+				display: flex;
+				flex-direction: column;
 			}
 		</style>
 	</head>
@@ -88,9 +111,17 @@
 			{% endif %}
 			
 		</div>
-		{%if imgdata %}
-		<img src="data:image/png;base64,{{ imgdata }}">
-		{%endif%}
+		<div class="right">
+			{% if stock_name %}
+			<div class="greeting">{{ stock_name }}</div>
+			{% endif %}
+			{%if imgdata %}
+			<div class="img-wrapper">
+				<img src="data:image/png;base64,{{ imgdata }}">
+			</div>
+			{%endif%}
+
+		</div>
 		<!-- <canvas id="myChart"></canvas>
             <script>
 				fetch('/data')
