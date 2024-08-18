@@ -89,6 +89,8 @@
 				<br/>	
 				<button id="submit" type="submit">Submit</button>
 			</form>
+			<input type="button" name="buy" value="buy"></input>
+			<input type="button" name="sell" value="sell"></input>
 			{% if stock_lst %}
 				<h2>즐겨찾기</h2>
 				<p>{{ stock_lst[0] }}</p>
@@ -113,8 +115,6 @@
 			{% endif %}
 			<a href="/list"><button>go to list</button></a>
 			<a href="/my"><button>go to my page</button></a>
-
-			
 		</div>
 		<div class="right">
 			{% if stock_name %}

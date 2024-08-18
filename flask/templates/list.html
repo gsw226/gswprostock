@@ -11,6 +11,21 @@
                 background-color: white;
             }
         </style>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // 모든 td 요소에 클릭 이벤트 리스너 추가
+                document.querySelectorAll('td').forEach(function(td) {
+                    td.addEventListener('click', function() {
+                        // 클릭한 td의 부모 tr(행)을 가져온다
+                        var row = td.parentElement;
+                        // 행의 두 번째 td를 가져온다
+                        var secondTd = row.children[1];
+                        // 두 번째 td의 텍스트 값을 반환
+                        location.href='http://127.0.0.1:5000/chart/'+secondTd.textContent;
+                    });
+                });
+            });
+        </script>
     </head>
     <body>
         <div class="container">

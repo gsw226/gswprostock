@@ -49,19 +49,42 @@ class favorite(db.Model):
 class own(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False)
-    stock_name = db.Column(db.String(80), nullable=False)
-
-class own_detail(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    email = db.Column(db.String(120), nullable=False)
     date_time = db.Column(db.Integer, nullable=False)
     stock_name = db.Column(db.String(80), nullable=False)
     buy_sell = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Integer, nullable=False)
     # percent = db.Column(db.Real, nullable=False)
-    method = db.Column(db.String(120), nullable=False)
+    # method = db.Column(db.String(120), nullable=False)
 with app.app_context():
     db.create_all()
+
+@app.route('/chart/<int:num>')
+def num(num):
+    num = str(num)
+    if len(num) < 6:
+        num = num.zfill(6)
+    df = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv')
+    row = df[df['단축코드'] == num]
+    print(row)
+    df = crawling(num)
+    sort_df = sum(df)
+
+    # 이미지 생성
+    img_stream = make_plt(sort_df, 0, 0, 0, 0, 0)
+    
+    # BytesIO 객체에서 바이트 데이터 추출
+    if isinstance(img_stream, BytesIO):
+        img_bytes = img_stream.getvalue()
+    else:
+        raise TypeError("Expected a BytesIO object")
+
+    # img_bytes가 비어 있지 않은 경우 base64로 인코딩
+    if img_bytes:
+        img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+    else:
+        img_base64 = ''  # img_bytes가 비어있으면 빈 문자열로 설정
+
+    return render_template('chart.html', img=img_base64,stock_name=row)
 
 @app.route('/ma')
 def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
@@ -73,6 +96,16 @@ def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
         return a.read()
     return "<div>Not found File</div>"
 
+@app.route('/but', methods=['POST'])
+def buy():
+     if request.method == 'POST':
+        #세션에서 내이름 뽑기
+        #내 이름으로 보유금액 가져오기
+        #보유금액에서 구매가격 만큼 차감 가져온걸 그대로 저장
+        #내 돈에서 주식현재가격 빼고, 저장
+        #차감되었으면, 구매해서 own테이블에 담기
+        #own도 저장
+        return redirect('/')
 @app.route('/', methods=['POST', 'GET'])
 def a():
     uid = session.get('uid','')
@@ -109,7 +142,10 @@ def a():
             sma100_ = request.form.get('sma100')
             upper_ = request.form.get('upper')
             lower_ = request.form.get('lower') 
-            favor = request.form.get('favor') 
+            favor = request.form.get('favor')
+            buy = request.form.get('buy') 
+            sell = request.form.get('sell') 
+
             if stock_name != '':
                 if favor != None:
                     new = favorite(email=uid,stock_name=stock_name)
@@ -154,9 +190,12 @@ def a():
                             expect += ' 장타'
                     else:
                         expect = '매도'
+            late_close = sort_df['close'].iloc[-1]
+            late_date = sort_df.index[-1]
+            print('9999999999',late_date)
+            
             img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
 
-            
             if type(img) != bytes:
                 img = img.encode('utf-8')
             if img != '':
@@ -247,19 +286,17 @@ def list_stock():
 @app.route('/my', methods=['POST', 'GET'])
 def my_page():
     if request.method == 'POST':
-        offensive = request.form.get('offensive')
-        balance = request.form.get('balance')
-        defend = request.form.get('defend')
         auto = request.form.get('auto')
         if auto:
-            print('auto')
-            
-        if offensive:
-            print('off')
-        elif balance:
-            print('bal')
-        else:
-            print('def')
+            offensive = request.form.get('offensive')
+            balance = request.form.get('balance')
+            defend = request.form.get('defend')
+            if offensive:
+                print('off')
+            elif balance:
+                print('bal')
+            else:
+                print('def')
     return render_template('my.html')
 
 
