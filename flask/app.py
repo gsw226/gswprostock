@@ -79,7 +79,7 @@ def a():
     #여기서 세션에 사용자 정보 없으면, 로그인 페이지 리디렉션
     if uid == None:
         redirect("/sign")
-    schedule.every().day.at("00:00").do(a)
+    # schedule.every().day.at("00:00").do(xa)
     sma_expect = []
     sma_expect_profit = []
     expect = ''
@@ -93,28 +93,25 @@ def a():
     print('aaaaaaa')
     print(uid)
     if uid != '':
-        results = favorite.query.filter_by(email=uid).order_by(favorite.id.asc()).limit(3).all()
-        stock_names = [result.stock_name for result in results]
-        print('stock_names', stock_names)
-        if stock_names == None:
-            stock_names = ['0','0','0']
+        # results = favorite.query.filter_by(email=uid).order_by(favorite.id.asc()).limit(3).all()
+        results = favorite.query.filter_by(email=uid)
+        stock_lst = [result.stock_name for result in results]
+        if stock_lst == None:
+            stock_lst = ['0','0','0']
         if request.method == 'POST':
-            # stock_name[len(stock_names)] = ''
-            if len(stock_names) > 0:
-                stock_name = stock_names[len(stock_names)-1]
-            else:
-                stock_name = request.form.get('stock_name')
+            # stock_name[len(stock_lst)] = ''
+            # if len(stock_lst) > 0:
+            #     stock_name = stock_lst[len(stock_lst)-1]
+            # else:
+            stock_name = request.form.get('stock_name')
             sma5_ = request.form.get('sma5')
             sma20_ = request.form.get('sma20')
             sma100_ = request.form.get('sma100')
             upper_ = request.form.get('upper')
             lower_ = request.form.get('lower') 
             favor = request.form.get('favor') 
-            # print(favor)
             if stock_name != '':
                 if favor != None:
-                    print('1111111111')
-                    print(uid)
                     new = favorite(email=uid,stock_name=stock_name)
                     db.session.add(new)
                     db.session.commit()
@@ -146,7 +143,6 @@ def a():
                 sma_expect_profit.append(sma5_expect_profit)
                 sma_expect_profit.append(sma20_expect_profit)
                 sma_expect_profit.append(sma100_expect_profit)
-                print(sma_expect)
                 if not(sma_expect[0] =='' and sma_expect[1]=='' and sma_expect[2]==''):
                     if int(max(sma_expect_profit)) > 0:
                         expect = '매매'
@@ -159,14 +155,13 @@ def a():
                     else:
                         expect = '매도'
             img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
-            print('999999999999')
-            print(stock_code)
+
             
             if type(img) != bytes:
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name, stock_names = stock_names)
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name, stock_lst = stock_lst)
             else: 
                 return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
         else:
@@ -200,14 +195,14 @@ def sign():
 @app.route('/login', methods=['POST','GET']) # 이메일, 비밀번호, 잔고 db로 전송
 def login():
     if request.method == 'POST':
-        # print("POST")
+        
         login_email = request.form['login_email']
         login_password = request.form['login_password']
         user = User.query.filter_by(email=login_email).first()
         if user.email == login_email:
             if check_password(login_password,user.password):
                 session['uid'] = login_email
-                # print(login_email)
+                
                 return redirect('/') 
             else:
                 return render_template('login.html')
@@ -220,15 +215,53 @@ def login():
 @app.route('/list', methods=['POST', 'GET'])
 def list_stock():
     try:
+        uid = session.get('uid','')
+        print(uid)
+        # results = favorite.query.filter_by(email=uid).all()
+        results = favorite.query.with_entities(favorite.stock_name).filter_by(email=uid).all()
+        result_strings = [item[0] for item in results]
+        print(result_strings)
         file_path = '/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv'
         lst = pd.read_csv(file_path)
         lst.drop(lst.columns[3], axis=1, inplace=True)
+        print(lst)
+        test = []
+        for i in result_strings:
+            a = lst[lst['한글 종목약명'] == i]
+            print('------',a.values)
+            test.extend(a.values)
+            # test.append(a.values)
+
+        print(test[0])
+        result_df = pd.DataFrame(test)
+        result_df.columns = ['단축코드','한글 종목명','한글 종목약명','어제종가']
+        # print(result_df)
         lst_table = lst.to_html(classes='table table-striped')
-        return render_template('list.html', table=lst_table)
+        result_table = result_df.to_html(classes='table table-striped')
+        return render_template('list.html', table=lst_table, favor_lst = result_table)
     except FileNotFoundError:
         return "Stock data file not found.", 404
     except Exception as e:
         return f"An error occurred: {e}", 500 
+
+@app.route('/my', methods=['POST', 'GET'])
+def my_page():
+    if request.method == 'POST':
+        offensive = request.form.get('offensive')
+        balance = request.form.get('balance')
+        defend = request.form.get('defend')
+        auto = request.form.get('auto')
+        if auto:
+            print('auto')
+            
+        if offensive:
+            print('off')
+        elif balance:
+            print('bal')
+        else:
+            print('def')
+    return render_template('my.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)

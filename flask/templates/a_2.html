@@ -25,6 +25,7 @@
 				left: 20%;
 				transform: translateX(-50%);
 				color: black;
+				background-color: aliceblue;
 				font-size: 2em; /* 텍스트 크기 조정 */
          	}
 			.container {
@@ -42,20 +43,21 @@
 				background-color: rgb(54,54,54);  
 			}
 			.img-wrapper {
-            position: relative;
-            width: 80vw; /* 이미지가 차지할 너비 (80% 화면 너비) */
-            height: 100vh; /* 이미지가 차지할 높이 (화면 전체 높이) */
-            overflow: hidden;
+				position: relative;
+				width: 80vw; /* 이미지가 차지할 너비 (80% 화면 너비) */
+				height: 100vh; /* 이미지가 차지할 높이 (화면 전체 높이) */
+				overflow: hidden;
 			}
+
 			img {
-            position: absolute;
-            top: 0;
-            left: 20%; /* 이미지 왼쪽으로 20% 이동 */
-            width: 120%;
-			top: 0%;
-			clip-path: inset(0 0 0 20%); /* 왼쪽 20%를 잘라냄 */
-			background-color: rgb(54,54,54);
+				position: absolute;
+				top: 0;
+				left: 0; /* 이미지 위치를 원래 위치로 */
+				width: 100%; /* 이미지의 크기를 100%로 유지 */
+				clip-path: inset(0 0 0 7%); /* 왼쪽 10%만 잘라냄 */
+				background-color: rgb(54,54,54);
 			}
+			
 			.container h2{
 				text-align: center;
 			}
@@ -87,11 +89,11 @@
 				<br/>	
 				<button id="submit" type="submit">Submit</button>
 			</form>
-			{% if stock_names %}
+			{% if stock_lst %}
 				<h2>즐겨찾기</h2>
-				<p>{{ stock_names[0] }}</p>
-				<p>{{ stock_names[1] }}</p>
-				<p>{{ stock_names[2] }}</p>
+				<p>{{ stock_lst[0] }}</p>
+				<p>{{ stock_lst[1] }}</p>
+				<p>{{ stock_lst[2] }}</p>
 			{% endif %}
 			{% if lst1 %}
 				<h2>명일 예상 종가</h2>
@@ -109,6 +111,9 @@
 				<h2>매매/매도</h2>
 				<p>{{ expect }}</p>
 			{% endif %}
+			<a href="/list"><button>go to list</button></a>
+			<a href="/my"><button>go to my page</button></a>
+
 			
 		</div>
 		<div class="right">

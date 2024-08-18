@@ -3,9 +3,19 @@
     <head>
         <title>종목 리스트</title>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <style>
+            body{
+                background-color: rgb(54,54,54);
+            }
+            div {
+                background-color: white;
+            }
+        </style>
     </head>
     <body>
         <div class="container">
+            <h2>즐겨찾기</h2>
+            {{ favor_lst | safe}}
             <h2>종목 리스트</h2>
             {{ table | safe }}
         </div>

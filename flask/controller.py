@@ -72,6 +72,7 @@ def calculate_gradient_at_last_point(df, sense, degree=5):
 
     return gradient,intercept
 
+
 def calculate_expected(df, sense, degree=5):
     df = df[-sense:-1]
     if len(df) < 2:
@@ -80,6 +81,7 @@ def calculate_expected(df, sense, degree=5):
     
     return p(sense)
 
+# sma 5 20 100 구하기
 def sum(df):
     sort_df = df.sort_index(ascending=False)
     date_format = "%Y.%m.%d"
@@ -100,6 +102,7 @@ def sum(df):
     print(sort_df)
     return sort_df
 
+# 그레프 만들기
 def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     addplt = []
     a = BytesIO()
@@ -123,13 +126,13 @@ def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     # a.read()
     return a
 
-
+# 암호화
 def hash_password(original_password):
     salt = 'gsw226'
     password = original_password + salt
     hashed_password = pbkdf2_sha256.hash(password)
     return hashed_password
-
+# 복호화
 def check_password(original_password, hashed_password):
     salt = 'gsw226'
     password = original_password + salt
