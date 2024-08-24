@@ -18,6 +18,7 @@ import schedule
 import time
 from datetime import datetime
 import re
+import ssl
 from passlib.hash import pbkdf2_sha256
 from controller import crawling
 from controller import stock_name_to_code
@@ -26,7 +27,6 @@ from controller import sum
 from controller import make_plt
 from controller import hash_password
 from controller import check_password
-
 
 
 app = Flask(__name__)
@@ -63,27 +63,25 @@ def num(num):
     num = str(num)
     if len(num) < 6:
         num = num.zfill(6)
-    df = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv')
-    row = df[df['단축코드'] == num]
-    print(row)
+    file_path = '/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv'
+    df = pd.read_csv(file_path)
+    
+    print('---------',df)
+
     df = crawling(num)
     sort_df = sum(df)
 
-    # 이미지 생성
     img_stream = make_plt(sort_df, 0, 0, 0, 0, 0)
     
-    # BytesIO 객체에서 바이트 데이터 추출
     if isinstance(img_stream, BytesIO):
         img_bytes = img_stream.getvalue()
     else:
         raise TypeError("Expected a BytesIO object")
 
-    # img_bytes가 비어 있지 않은 경우 base64로 인코딩
     if img_bytes:
         img_base64 = base64.b64encode(img_bytes).decode('utf-8')
     else:
-        img_base64 = ''  # img_bytes가 비어있으면 빈 문자열로 설정
-
+        img_base64 = ''
     return render_template('chart.html', img=img_base64,stock_name=row)
 
 @app.route('/ma')
@@ -96,7 +94,7 @@ def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
         return a.read()
     return "<div>Not found File</div>"
 
-@app.route('/but', methods=['POST'])
+@app.route('/buy', methods=['POST'])
 def buy():
      if request.method == 'POST':
         #세션에서 내이름 뽑기
@@ -104,7 +102,7 @@ def buy():
         #보유금액에서 구매가격 만큼 차감 가져온걸 그대로 저장
         #내 돈에서 주식현재가격 빼고, 저장
         #차감되었으면, 구매해서 own테이블에 담기
-        #own도 저장
+        #own도 저  장
         return redirect('/')
 @app.route('/', methods=['POST', 'GET'])
 def a():
@@ -301,4 +299,4 @@ def my_page():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port="443", ssl_context="adhoc")
