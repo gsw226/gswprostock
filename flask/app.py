@@ -63,7 +63,7 @@ def num(num):
     num = str(num)
     if len(num) < 6:
         num = num.zfill(6)
-    file_path = '/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv'
+    file_path = 'flask/stock.csv'
     df = pd.read_csv(file_path)
     
     print('---------',df)
@@ -258,7 +258,7 @@ def list_stock():
         results = favorite.query.with_entities(favorite.stock_name).filter_by(email=uid).all()
         result_strings = [item[0] for item in results]
         print(result_strings)
-        file_path = '/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv'
+        file_path = 'flask/stock_data.csv'
         lst = pd.read_csv(file_path)
         lst.drop(lst.columns[3], axis=1, inplace=True)
         print(lst)
