@@ -34,7 +34,7 @@ def crawling(stock_code):
     return df
 
 def stock_name_to_code(stock_name):
-    ticker_list = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv')
+    ticker_list = pd.read_csv('flask/stock.csv')
     c=0
     ticker_list = ticker_list.rename(columns={'단축코드':'code','한글 종목명':'name','한글 종목약명':'short_name'})
     for code in ticker_list['short_name']:
