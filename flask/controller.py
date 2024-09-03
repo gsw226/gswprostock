@@ -33,8 +33,8 @@ def crawling(stock_code):
     df = df.rename(columns={"날짜": "date", "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume"})
     return df
 
-def stock_name_to_code(stock_name):
-    ticker_list = pd.read_csv('flask/stock.csv')
+def name_to_code(stock_name):
+    ticker_list = pd.read_csv('./stock.csv')
     c=0
     ticker_list = ticker_list.rename(columns={'단축코드':'code','한글 종목명':'name','한글 종목약명':'short_name'})
     for code in ticker_list['short_name']:
@@ -48,7 +48,23 @@ def stock_name_to_code(stock_name):
             return stock_str
         else:
             c += 1
-    return 0    
+    return 0
+
+def code_to_name(stock_code):
+    #stock_code = str(stock_code).zfill(6)  # 6자리 형식으로 문자열로 변환
+
+    ticker_list = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv')
+    ticker_list = ticker_list.rename(columns={'단축코드': 'code', '한글 종목명': 'name', '한글 종목약명': 'short_name'})
+
+    matching_row = ticker_list[ticker_list['code'] == stock_code]
+    print('01010',matching_row)
+
+    if not matching_row.empty:
+        stock_name = matching_row.iloc[0]['short_name']
+        return stock_name
+    else:
+        return 0
+
 
 def approximation(df, degree=5):
     x = list(range(len(df)))
@@ -125,6 +141,19 @@ def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(13,6),savefig = a)
     # a.read()
     return a
+def decide(sma_expect,sma_expect_profit,sma5_expect_profit,sma20_expect_profit):
+    if not(sma_expect[0] =='' and sma_expect[1]=='' and sma_expect[2]==''): #얘네 걍 싹다 함수로
+                    if int(max(sma_expect_profit)) > 0:
+                        expect = '매매'
+                        if int(max(sma_expect_profit)) == int(sma5_expect_profit):
+                            expect += ' 단타'
+                        elif int(max(sma_expect_profit)) == int(sma20_expect_profit):
+                            expect += ' 스윙'
+                        else:
+                            expect += ' 장타'
+                    else:
+                        expect = '매도'
+    return expect
 
 # 암호화
 def hash_password(original_password):

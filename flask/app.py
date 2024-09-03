@@ -21,12 +21,15 @@ import re
 import ssl
 from passlib.hash import pbkdf2_sha256
 from controller import crawling
-from controller import stock_name_to_code
+from controller import name_to_code
 from controller import calculate_expected
 from controller import sum
 from controller import make_plt
 from controller import hash_password
 from controller import check_password
+from controller import decide
+from controller import code_to_name
+
 
 
 app = Flask(__name__)
@@ -40,6 +43,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
+    account = db.Column(db.Integer)
 
 class favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -58,31 +62,16 @@ class own(db.Model):
 with app.app_context():
     db.create_all()
 
-@app.route('/chart/<int:num>')
-def num(num):
-    num = str(num)
-    if len(num) < 6:
-        num = num.zfill(6)
-    file_path = 'flask/stock.csv'
-    df = pd.read_csv(file_path)
-    
-    print('---------',df)
+@app.route('/')
+def index():
+    uid = session.get('uid','')
+    if uid == None:
+        redirect("/sign")
+    #여기서 내 즐겨찾기 종목 중 가장 위에있는 종목번호 불러오기
+    #그래서 변수 num에 담고
+    num = 0
+    return redirect('/chart/'+str(num))
 
-    df = crawling(num)
-    sort_df = sum(df)
-
-    img_stream = make_plt(sort_df, 0, 0, 0, 0, 0)
-    
-    if isinstance(img_stream, BytesIO):
-        img_bytes = img_stream.getvalue()
-    else:
-        raise TypeError("Expected a BytesIO object")
-
-    if img_bytes:
-        img_base64 = base64.b64encode(img_bytes).decode('utf-8')
-    else:
-        img_base64 = ''
-    return render_template('chart.html', img=img_base64,stock_name=row)
 
 @app.route('/ma')
 def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
@@ -94,23 +83,34 @@ def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
         return a.read()
     return "<div>Not found File</div>"
 
-@app.route('/buy', methods=['POST'])
+
+@app.route('/buy', methods=['GET'])
 def buy():
-     if request.method == 'POST':
+    if request.method == 'GET':
         #세션에서 내이름 뽑기
+        uid = session.get('uid','')
+
+        stock_code = 5930
         #내 이름으로 보유금액 가져오기
+        user = User.query.filter_by(email=uid)
+
+        df = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv')
+        filtered_df = df[df['stock_code'] == stock_code]
+        print(filtered_df)
         #보유금액에서 구매가격 만큼 차감 가져온걸 그대로 저장
+
         #내 돈에서 주식현재가격 빼고, 저장
         #차감되었으면, 구매해서 own테이블에 담기
         #own도 저  장
         return redirect('/')
-@app.route('/', methods=['POST', 'GET'])
-def a():
+     
+
+@app.route('/chart/<num>', methods=['POST', 'GET'])
+def a(num):
     uid = session.get('uid','')
-    #여기서 세션에 사용자 정보 없으면, 로그인 페이지 리디렉션
     if uid == None:
         redirect("/sign")
-    # schedule.every().day.at("00:00").do(xa)
+    
     sma_expect = []
     sma_expect_profit = []
     expect = ''
@@ -121,19 +121,12 @@ def a():
     upper_ = 0
     lower_ = 0
     sort_df = pd.DataFrame
-    print('aaaaaaa')
-    print(uid)
     if uid != '':
-        # results = favorite.query.filter_by(email=uid).order_by(favorite.id.asc()).limit(3).all()
         results = favorite.query.filter_by(email=uid)
         stock_lst = [result.stock_name for result in results]
         if stock_lst == None:
             stock_lst = ['0','0','0']
         if request.method == 'POST':
-            # stock_name[len(stock_lst)] = ''
-            # if len(stock_lst) > 0:
-            #     stock_name = stock_lst[len(stock_lst)-1]
-            # else:
             stock_name = request.form.get('stock_name')
             sma5_ = request.form.get('sma5')
             sma20_ = request.form.get('sma20')
@@ -141,15 +134,14 @@ def a():
             upper_ = request.form.get('upper')
             lower_ = request.form.get('lower') 
             favor = request.form.get('favor')
-            buy = request.form.get('buy') 
-            sell = request.form.get('sell') 
+            
 
             if stock_name != '':
                 if favor != None:
                     new = favorite(email=uid,stock_name=stock_name)
                     db.session.add(new)
                     db.session.commit()
-                stock_code = stock_name_to_code(stock_name)
+                stock_code = name_to_code(stock_name)
                 stock_code = str(stock_code)
                 df = crawling(stock_code)
                 print(sort_df)
@@ -177,20 +169,8 @@ def a():
                 sma_expect_profit.append(sma5_expect_profit)
                 sma_expect_profit.append(sma20_expect_profit)
                 sma_expect_profit.append(sma100_expect_profit)
-                if not(sma_expect[0] =='' and sma_expect[1]=='' and sma_expect[2]==''):
-                    if int(max(sma_expect_profit)) > 0:
-                        expect = '매매'
-                        if int(max(sma_expect_profit)) == int(sma5_expect_profit):
-                            expect += ' 단타'
-                        elif int(max(sma_expect_profit)) == int(sma20_expect_profit):
-                            expect += ' 스윙'
-                        else:
-                            expect += ' 장타'
-                    else:
-                        expect = '매도'
-            late_close = sort_df['close'].iloc[-1]
-            late_date = sort_df.index[-1]
-            print('9999999999',late_date)
+                expect = decide(sma_expect=sma_expect,sma_expect_profit=sma_expect_profit,sma5_expect_profit=sma5_expect_profit,sma20_expect_profit=sma20_expect_profit)
+            
             
             img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
 
@@ -202,10 +182,22 @@ def a():
             else: 
                 return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
         else:
-            return render_template('a_2.html')
+            print(type(num))
+            df = crawling(num)
+            sort_df = sum(df)
+            stock_name = code_to_name(num)
+            print(stock_name)
+            img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
+            if type(img) != bytes:
+                img = img.encode('utf-8')
+            if img != '':
+                img = base64.b64encode(img).decode('utf-8')
+            return render_template('a_2.html', imgdata = img)
     else:
         return redirect('/sign')
     
+
+
 @app.route('/sign', methods=['POST', 'GET'])  # 이메일, 비밀번호 db로 전송
 def sign():
     password_pattern = r'^(?=.*[!@#$%^&*(),.?":{}|<>])(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).+$'
@@ -219,7 +211,7 @@ def sign():
         
         if re.match(password_pattern, password):
             hashed_password = hash_password(password)
-            new_user = User(email=email, password=hashed_password)
+            new_user = User(email=email, password=hashed_password, account=10000000)
             db.session.add(new_user)
             db.session.commit()
             return render_template('login.html')
@@ -248,6 +240,8 @@ def login():
     else:
         return render_template('login.html')
         
+#stock_name -> code
+#stock_code -> name
 
 @app.route('/list', methods=['POST', 'GET'])
 def list_stock():
@@ -258,7 +252,7 @@ def list_stock():
         results = favorite.query.with_entities(favorite.stock_name).filter_by(email=uid).all()
         result_strings = [item[0] for item in results]
         print(result_strings)
-        file_path = 'flask/stock_data.csv'
+        file_path = './stock_data.csv'
         lst = pd.read_csv(file_path)
         lst.drop(lst.columns[3], axis=1, inplace=True)
         print(lst)
