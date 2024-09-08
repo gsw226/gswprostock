@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>sign up</title>
-    <style>
-        body {
+    <head>
+        <style>
+            body {
             background-color: rgb(54,54,54);
             width: 100vw;
             margin: 0;
@@ -67,27 +66,18 @@
             cursor: pointer;
             width: 400px;
         }
-        button:hover {
-            background-color: rgb(220, 220, 220);
-        }
-        a button{
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>StockPro</h1>
-        <form action="/sign" method="post">
-            <div>sign up</div>
-            <input type="text" name="email" placeholder="email">
-            <br/>
-            <input type="password" name="password" placeholder="password">
-            <br/>
-            <button id="submit" type="submit">Submit</button>
-            <br/>
-        </form>
-        <a href="/login"><button>go to login</button></a>
-    </div>
-</body>
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <form action="/my/check" method="post">
+                <h1>check</h1>
+                <input type="text" name="check_email" placeholder="email">
+                <br/>
+                <input type="password" name="check_password" placeholder="password">
+                <br>
+                <button id="submit" type="submit">Submit</button>
+            </form>
+        </div>
+    </body>
 </html>

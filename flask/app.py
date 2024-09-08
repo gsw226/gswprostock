@@ -26,7 +26,7 @@ from controller import calculate_expected
 from controller import sum
 from controller import make_plt
 from controller import hash_password
-from controller import check_password
+from controller import unhash_password
 from controller import decide
 from controller import code_to_name
 
@@ -48,7 +48,7 @@ class User(db.Model):
 class favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False)
-    stock_name = db.Column(db.String(80), nullable=False, unique=True)
+    stock_name = db.Column(db.String(80), nullable=False)
 
 class own(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -62,26 +62,44 @@ class own(db.Model):
 with app.app_context():
     db.create_all()
 
-@app.route('/')
+@app.route('/' ,methods=['POST','GET'])
 def index():
     uid = session.get('uid','')
+    #즐겨찾는 종목처리를 일로넘김
     if uid == None:
         redirect("/sign")
-    #여기서 내 즐겨찾기 종목 중 가장 위에있는 종목번호 불러오기
-    #그래서 변수 num에 담고
-    num = 0
-    return redirect('/chart/'+str(num))
+    results = favorite.query.filter_by(email=uid).all()
+    print('result')
+    print(results)
+    stock_lst = [result.stock_name for result in results]
+    stock_lst = stock_lst[-3:]  # 가장 밑에 있는 3개
+    stock_lst = stock_lst + [0] * (3 - len(stock_lst))  # 기본값으로 0을 추가
+    print('result')
+    stock_number = "005930"
+    url = "/chart/"+stock_number
+    if request.method == 'POST':
+        stock_name = request.form.get('stock_name')
+        num = name_to_code(stock_name=stock_name)
+        stock_number = str(num)
+        sma5_ = request.form.get('sma5') or ''
+        sma20_ = request.form.get('sma20') or ''
+        sma100_ = request.form.get('sma100') or ''
+        upper_ = request.form.get('upper') or ''
+        lower_ = request.form.get('lower') or ''
+        favor = request.form.get('favor') or ''
+        print(sma5_,sma20_,sma100_,upper_,lower_,favor)
+        options = ','.join(val for val in [sma5_, sma20_, sma100_, upper_, lower_, favor] if val)
+        url = f"/chart/{stock_number}?options={options}&name={stock_name}"
+    return redirect(url)
 
 
 @app.route('/ma')
-def ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df):
-    if stock_name != '' and stock_name != 0:
-        a = make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_)
-        a.seek(0)
-        # print('aaaaa')
-        # print(a.read)
-        return a.read()
-    return "<div>Not found File</div>"
+def ma(stock_name, sma5_, sma20_, sma100_, upper_, lower_, sort_df=None):
+
+    a = make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_)
+    a.seek(0)
+    return a.read()
+    # return "<div>Not found File</div>"
 
 
 @app.route('/buy', methods=['GET'])
@@ -110,11 +128,10 @@ def a(num):
     uid = session.get('uid','')
     if uid == None:
         redirect("/sign")
-    
     sma_expect = []
     sma_expect_profit = []
     expect = ''
-    stock_name = 0
+    stock_name = request.args.get('name') or 0
     sma5_ = 0
     sma20_ = 0
     sma100_ = 0
@@ -122,29 +139,35 @@ def a(num):
     lower_ = 0
     sort_df = pd.DataFrame
     if uid != '':
-        results = favorite.query.filter_by(email=uid)
-        stock_lst = [result.stock_name for result in results]
-        if stock_lst == None:
-            stock_lst = ['0','0','0']
-        if request.method == 'POST':
-            stock_name = request.form.get('stock_name')
-            sma5_ = request.form.get('sma5')
-            sma20_ = request.form.get('sma20')
-            sma100_ = request.form.get('sma100')
-            upper_ = request.form.get('upper')
-            lower_ = request.form.get('lower') 
-            favor = request.form.get('favor')
+        if request.method == 'GET':
+            df = crawling(num)
+            sort_df = sum(df)
+            favor = None
             
-
-            if stock_name != '':
-                if favor != None:
-                    new = favorite(email=uid,stock_name=stock_name)
+            options = request.args.get('options', '').split(',')
+            if 'sma5' in options:
+                sma5_ = 'sma5'
+            if 'sma20' in options:
+                sma20_ = 'sma20'
+            if 'sma100' in options:
+                sma100_ = 'sma100'
+            if 'upper' in options:
+                upper_ = 'upper'
+            if 'lower' in options:
+                lower_ = 'lower'
+            if 'favor' in options:
+                favor = 'favor'
+            if favor:
+                new = favorite(email=uid,stock_name=stock_name)
+                existing_record = favorite.query.filter_by(email=uid, stock_name=stock_name).first()
+                if existing_record:
+                    print('종복')
+                else:
                     db.session.add(new)
                     db.session.commit()
-                stock_code = name_to_code(stock_name)
-                stock_code = str(stock_code)
-                df = crawling(stock_code)
-                print(sort_df)
+            if num != 0:
+                df = crawling(num)
+                # print(sort_df)
                 sort_df = sum(df)   
                 sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
                 sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
@@ -171,28 +194,21 @@ def a(num):
                 sma_expect_profit.append(sma100_expect_profit)
                 expect = decide(sma_expect=sma_expect,sma_expect_profit=sma_expect_profit,sma5_expect_profit=sma5_expect_profit,sma20_expect_profit=sma20_expect_profit)
             
-            
+            results = favorite.query.filter_by(email=uid).all()
+            print('result')
+            print(results)
+            stock_lst = [result.stock_name for result in results]
+            stock_lst = stock_lst[-3:]  # 가장 밑에 있는 3개
+            stock_lst = stock_lst + [0] * (3 - len(stock_lst))
             img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
 
             if type(img) != bytes:
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name, stock_lst = stock_lst)
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,stock_lst=stock_lst)
             else: 
                 return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
-        else:
-            print(type(num))
-            df = crawling(num)
-            sort_df = sum(df)
-            stock_name = code_to_name(num)
-            print(stock_name)
-            img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
-            if type(img) != bytes:
-                img = img.encode('utf-8')
-            if img != '':
-                img = base64.b64encode(img).decode('utf-8')
-            return render_template('a_2.html', imgdata = img)
     else:
         return redirect('/sign')
     
@@ -229,7 +245,7 @@ def login():
         login_password = request.form['login_password']
         user = User.query.filter_by(email=login_email).first()
         if user.email == login_email:
-            if check_password(login_password,user.password):
+            if unhash_password(login_password,user.password):
                 session['uid'] = login_email
                 
                 return redirect('/') 
@@ -251,11 +267,11 @@ def list_stock():
         # results = favorite.query.filter_by(email=uid).all()
         results = favorite.query.with_entities(favorite.stock_name).filter_by(email=uid).all()
         result_strings = [item[0] for item in results]
-        print(result_strings)
+        print('1_1_1',result_strings)
         file_path = './stock_data.csv'
         lst = pd.read_csv(file_path)
         lst.drop(lst.columns[3], axis=1, inplace=True)
-        print(lst)
+        print('2_2_2',lst)
         test = []
         for i in result_strings:
             a = lst[lst['한글 종목약명'] == i]
@@ -291,6 +307,20 @@ def my_page():
                 print('def')
     return render_template('my.html')
 
+
+@app.route('/my/check', methods=['POST', 'GET'])
+def my_page_check():
+    uid = session.get('uid','')
+    results = User.query.filter_by(email=uid).first()
+    if request.method == 'POST':
+        check_email = request.form.get('check_email')
+        check_password = request.form.get('check_password')
+        if check_email == results.email:
+            password=unhash_password(results.password)
+            if check_password == password:
+                return render_template('real_my/')
+        
+    return render_template('my_check.html')
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port="443", debug=False,ssl_context="adhoc")

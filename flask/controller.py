@@ -115,7 +115,7 @@ def sum(df):
     sort_df['stddev'] = sort_df['close'].rolling(window=20).std()
     sort_df['upper'] = sort_df['sma20'] + (sort_df['stddev']*2)
     sort_df['lower'] = sort_df['sma20'] - (sort_df['stddev']*2)
-    print(sort_df)
+    # print(sort_df)
     return sort_df
 
 # 그레프 만들기
@@ -141,6 +141,7 @@ def make_plt(sort_df,sma5_,sma20_,sma100_,upper_,lower_):
     mpf.plot(sort_df, type='candle', addplot=addplt,style='charles',show_nontrading=True,figratio=(13,6),savefig = a)
     # a.read()
     return a
+
 def decide(sma_expect,sma_expect_profit,sma5_expect_profit,sma20_expect_profit):
     if not(sma_expect[0] =='' and sma_expect[1]=='' and sma_expect[2]==''): #얘네 걍 싹다 함수로
                     if int(max(sma_expect_profit)) > 0:
@@ -162,7 +163,7 @@ def hash_password(original_password):
     hashed_password = pbkdf2_sha256.hash(password)
     return hashed_password
 # 복호화
-def check_password(original_password, hashed_password):
+def unhash_password(original_password, hashed_password):
     salt = 'gsw226'
     password = original_password + salt
     return pbkdf2_sha256.verify(password, hashed_password)
