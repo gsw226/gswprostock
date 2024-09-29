@@ -10,87 +10,151 @@
 		<title>주가 예측</title>
 		<style>
 			body {
-				background-color: rgb(54,54,54);
-        		margin: 0;
-				border: 5px solid rgb(54,54,54);
-				/* border-color: rgb(54,54,54); */
+				background-color: #2c3e50;
+				margin: 0;
+				font-family: 'Arial', sans-serif;
+				color: #ecf0f1;
 				display: flex;
-				justify-content: space-between;
-				overflow: scroll; /* 또는 overflow: scroll; */
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+				overflow: hidden;
 			}
-			.greeting {
-				z-index: 100;
-				position: absolute;
-				top: 10px; /* 상단 여백 */
-				left: 20%;
-				transform: translateX(-50%);
-				color: black;
-				background-color: aliceblue;
-				font-size: 2em; /* 텍스트 크기 조정 */
-         	}
 			.container {
-				position:absolute;
-				color: white;
-        		width: fit-content;
-				display: flex;
-				flex-direction: column;
-				background-color: rgb(54,54,54);
-				z-index: 100;
-				overflow: scroll;
+				background-color: #34495e;
+				padding: 20px;
+				border-radius: 10px;
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+				max-width: 400px;
+				width: 100%;
+				height: 80vh;
+				overflow-y: auto; /* Make container scrollable */
+			}
+			.container h2 {
+				text-align: left;
+				margin-bottom:8px;
+				margin-top: 20px;
 			}
 			.container form {
+				display: flex;
+				flex-direction: column;
+			}
+			.form-group {
+				display: flex;
+				align-items: center;
+				margin-bottom: 10px;
+			}
+			.form-group label {
+				flex: 1;
+				margin-right: 10px;
+			}
+			.form-group input[type="text"],
+			.form-group input[type="checkbox"],
+			.container form button {
+				padding: 10px;
+				border: none;
+				border-radius: 5px;
+			}
+			.container form input[type="text"] {
+				background-color: #ecf0f1;
+				color: #2c3e50;
+				flex: 2;
+			}
+			.container form input[type="checkbox"] {
+				margin-right: 10px;
+			}
+			.container form button {
+				background-color: #e74c3c;
+				color: #ecf0f1;
+				cursor: pointer;
+				transition: background-color 0.3s;
+			}
+			.container form button:hover {
+				background-color: #c0392b;
+			}
+			.greeting {
+				position: absolute;
+				top: 10px;
+				left: 10px;
+				background-color: rgba(236, 240, 241, 0.8);
+				color: #2c3e50;
+				padding: 5px 10px;
+				border-radius: 5px;
+				font-size: 1.2em;
 				z-index: 100;
-				background-color: rgb(54,54,54);  
 			}
 			.img-wrapper {
 				position: relative;
-				width: 80vw; /* 이미지가 차지할 너비 (80% 화면 너비) */
-				height: 100vh; /* 이미지가 차지할 높이 (화면 전체 높이) */
+				width: 80vw;
+				height: 100vh;
 				overflow: hidden;
 			}
-
-			img {
+			.img-wrapper img {
 				position: absolute;
 				top: 0;
-				left: 0; /* 이미지 위치를 원래 위치로 */
-				width: 100%; /* 이미지의 크기를 100%로 유지 */
-				clip-path: inset(0 0 0 7%); /* 왼쪽 10%만 잘라냄 */
-				background-color: rgb(54,54,54);
+				left: 0;
+				width: 100%;
+				clip-path: inset(0 0 0 7%);
+				background-color: #2c3e50;
 			}
-			
-			.container h2{
-				text-align: center;
-			}
-			.container p{
-				text-align: center;
-			}
-			.right{
+			.right {
 				display: flex;
 				flex-direction: column;
+				align-items: center;
+			}
+			.right a button {
+				background-color: #3498db;
+				color: #ecf0f1;
+				padding: 10px 20px;
+				border: none;
+				border-radius: 5px;
+				cursor: pointer;
+				transition: background-color 0.3s;
+				margin-top: 10px;
+			}
+			.right a button:hover {
+				background-color: #2980b9;
+			}
+			.container p{
+				margin: 0px;
+				margin-bottom: 10px;
 			}
 		</style>
 	</head>
 	<body>
 		<div class="container">
 			<form action="/" method="POST">
-				<input type="text" name="stock_name" value="" placeholder="종목 이름을 입력하세요">
-				<br/>
-				<input type="checkbox" name="sma5" value="sma5">sma5</input>
-				<br/>
-				<input type="checkbox" name="sma20" value="sma20">sma20</input>
-				<br/>
-				<input type="checkbox" name="sma100" value="sma100">sma100</input>
-				<br/>
-				<input type="checkbox" name="upper" value="upper">upper</input>
-				<br/>
-				<input type="checkbox" name="lower" value="lower">lower</input>
-				<br/>
-				<input type="checkbox" name="favor" value="favor">즐겨찾기</input>
-				<br/>	
-				<button id="submit" type="submit">Submit</button>
+				<div class="form-group">
+					<input type="text" id="stock_name" name="stock_name" value="" placeholder="종목 이름을 입력하세요">
+				</div>
+				<div class="form-group">
+					<input type="checkbox" id="sma5" name="sma5" value="sma5">
+					<label for="sma5">sma5</label>
+				</div>
+				<div class="form-group">
+					<input type="checkbox" id="sma20" name="sma20" value="sma20">
+					<label for="sma20">sma20</label>
+				</div>
+				<div class="form-group">
+					<input type="checkbox" id="sma100" name="sma100" value="sma100">
+					<label for="sma100">sma100</label>
+				</div>
+				<div class="form-group">
+					<input type="checkbox" id="upper" name="upper" value="upper">
+					<label for="upper">upper</label>
+				</div>
+				<div class="form-group">
+					<input type="checkbox" id="lower" name="lower" value="lower">
+					<label for="lower">lower</label>
+				</div>
+				<div class="form-group">
+					<input type="checkbox" id="favor" name="favor" value="favor">
+					<label for="favor">즐겨찾기</label>
+				</div>
+				<button id="submit" type="submit">검색</button>
 			</form>
 			{% if stock_lst %}
-				<h2>즐겨찾기</h2>
+				<h2>탐색</h2>
 				<p>{{ stock_lst[0] }}</p>
 				<p>{{ stock_lst[1] }}</p>
 				<p>{{ stock_lst[2] }}</p>
@@ -123,90 +187,6 @@
 				<img src="data:image/png;base64,{{ imgdata }}">
 			</div>
 			{%endif%}
-
 		</div>
-		<!-- <canvas id="myChart"></canvas>
-            <script>
-				fetch('/data')
-            .then(response => response.json())
-            .then(jsonData => {
-                // 캔들 차트 데이터 변환
-                const chartData = jsonData.map(entry => ({
-                    t: entry.date,
-                    o: entry.open,
-                    h: entry.high,
-                    l: entry.low,
-                    c: entry.close
-                }));
-				const ctx = document.getElementById('candleChart').getContext('2d');
-
-                new Chart(ctx, {
-                    type: 'candlestick',
-                    data: {
-                        datasets: [
-                            {
-                                label: 'Stock Price',
-                                data: chartData,
-                                borderColor: 'black',
-                                backgroundColor: 'rgba(0, 0, 0, 0.1)'
-                            },
-                            {
-                                label: 'SMA5',
-                                data: sma5Data,
-                                type: 'line',
-                                borderColor: 'blue',
-                                backgroundColor: 'transparent',
-                                borderWidth: 2,
-                                yAxisID: 'y'
-                            },
-                            {
-                                label: 'Volume',
-                                data: volumeData,
-                                type: 'bar',
-                                backgroundColor: 'rgba(0, 123, 255, 0.3)',
-                                yAxisID: 'volume'
-                            }
-                        ]
-                    },
-                    options: {
-                        scales: {
-                            x: {
-                                type: 'time',
-                                time: {
-                                    unit: 'day'
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Date'
-                                }
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Price'
-                                }
-                            },
-                            volume: {
-                                type: 'linear',
-                                position: 'right',
-                                title: {
-                                    display: true,
-                                    text: 'Volume'
-                                },
-                                grid: {
-                                    drawOnChartArea: false
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: true
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => console.error('Error fetching data:', error));
-			</script> -->
 	</body>
 </html>

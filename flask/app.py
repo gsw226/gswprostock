@@ -1,25 +1,12 @@
-import json
-import ssl
-from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, render_template, request, session, redirect, jsonify
-from flask_migrate import Migrate
-db = SQLAlchemy()
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup as bs
-import warnings
 import matplotlib
-matplotlib.use('Agg')
-import mplfinance as mpf
-from io import BytesIO
-from numpy.polynomial.polynomial import Polynomial
+matplotlib.use('Agg')  # Use Agg backend for matplotlib
+
+from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, render_template, request, session, redirect
+from flask_migrate import Migrate
+import pandas as pd
 import base64
-import schedule
-import time
-from datetime import datetime
 import re
-import ssl
-from passlib.hash import pbkdf2_sha256
 from controller import crawling
 from controller import name_to_code
 from controller import calculate_expected
@@ -29,9 +16,10 @@ from controller import hash_password
 from controller import unhash_password
 from controller import decide
 from controller import code_to_name
+from sqlalchemy.exc import IntegrityError
 
 
-
+db = SQLAlchemy()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
@@ -48,7 +36,7 @@ class User(db.Model):
 class favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False)
-    stock_name = db.Column(db.String(80), nullable=False)
+    stock_name = db.Column(db.String(80), nullable=False)  # UNIQUE 제약 조건 추가
 
 class own(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -102,25 +90,25 @@ def ma(stock_name, sma5_, sma20_, sma100_, upper_, lower_, sort_df=None):
     # return "<div>Not found File</div>"
 
 
-@app.route('/buy', methods=['GET'])
-def buy():
-    if request.method == 'GET':
-        #세션에서 내이름 뽑기
-        uid = session.get('uid','')
+# @app.route('/buy', methods=['GET'])
+# def buy():
+#     if request.method == 'GET':
+#         #세션에서 내이름 뽑기
+#         uid = session.get('uid','')
 
-        stock_code = 5930
-        #내 이름으로 보유금액 가져오기
-        user = User.query.filter_by(email=uid)
+#         stock_code = 5930
+#         #내 이름으로 보유금액 가져오기
+#         user = User.query.filter_by(email=uid)
 
-        df = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv')
-        filtered_df = df[df['stock_code'] == stock_code]
-        print(filtered_df)
-        #보유금액에서 구매가격 만큼 차감 가져온걸 그대로 저장
+#         df = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv')
+#         filtered_df = df[df['stock_code'] == stock_code]
+#         print(filtered_df)
+#         #보유금액에서 구매가격 만큼 차감 가져온걸 그대로 저장
 
-        #내 돈에서 주식현재가격 빼고, 저장
-        #차감되었으면, 구매해서 own테이블에 담기
-        #own도 저  장
-        return redirect('/')
+#         #내 돈에서 주식현재가격 빼고, 저장
+#         #차감되었으면, 구매해 own테이블에 담기
+#         #own도 저  장
+#         return redirect('/')
      
 
 @app.route('/chart/<num>', methods=['POST', 'GET'])
@@ -145,6 +133,7 @@ def a(num):
             favor = None
             
             options = request.args.get('options', '').split(',')
+            print(options)
             if 'sma5' in options:
                 sma5_ = 'sma5'
             if 'sma20' in options:
@@ -157,14 +146,16 @@ def a(num):
                 lower_ = 'lower'
             if 'favor' in options:
                 favor = 'favor'
-            if favor:
-                new = favorite(email=uid,stock_name=stock_name)
-                existing_record = favorite.query.filter_by(email=uid, stock_name=stock_name).first()
-                if existing_record:
-                    print('종복')
-                else:
-                    db.session.add(new)
+            if favor == 'favor':
+                # Check if the stock_name already exists for the user
+                existing_favorite = favorite.query.filter_by(email=uid, stock_name=stock_name).first()
+                if not existing_favorite:
+                    print("INSERT")
+                    new_favorite = favorite(email=uid, stock_name=stock_name)
+                    db.session.add(new_favorite)
                     db.session.commit()
+                else:
+                    print('종복')
             if num != 0:
                 df = crawling(num)
                 # print(sort_df)
@@ -221,20 +212,25 @@ def sign():
     if request.method == 'POST':
         email = request.form.get('email', '')
         password = request.form.get('password', '')
+        password_2 = request.form.get('password_2', '')
         
         if email == '' or password == '':
             return redirect('/sign')
         
         if re.match(password_pattern, password):
-            hashed_password = hash_password(password)
-            new_user = User(email=email, password=hashed_password, account=10000000)
-            db.session.add(new_user)
-            db.session.commit()
-            return render_template('login.html')
+            if password == password_2:
+                hashed_password = hash_password(password)
+                new_user = User(email=email, password=hashed_password, account=10000000)
+                db.session.add(new_user)
+                db.session.commit()
+                return render_template('login.html')
+            else: 
+                return redirect('/sign')
         else:
             return redirect('/sign')
     else:
         return render_template('sign.html')
+
 
 
 @app.route('/login', methods=['POST','GET']) # 이메일, 비밀번호, 잔고 db로 전송
@@ -273,19 +269,20 @@ def list_stock():
         lst.drop(lst.columns[3], axis=1, inplace=True)
         print('2_2_2',lst)
         test = []
-        for i in result_strings:
-            a = lst[lst['한글 종목약명'] == i]
-            print('------',a.values)
-            test.extend(a.values)
-            # test.append(a.values)
+        if result_strings is not None:
+            for i in result_strings:
+                a = lst[lst['한글 종목약명'] == i]
+                print('------',a.values)
+                test.extend(a.values)
+                # test.append(a.values)
 
-        print(test[0])
-        result_df = pd.DataFrame(test)
-        result_df.columns = ['단축코드','한글 종목명','한글 종목약명','어제종가']
-        # print(result_df)
-        lst_table = lst.to_html(classes='table table-striped')
-        result_table = result_df.to_html(classes='table table-striped')
-        return render_template('list.html', table=lst_table, favor_lst = result_table)
+            print(test[0])
+            result_df = pd.DataFrame(test)
+            result_df.columns = ['단축코드','한글 종목명','한글 종목약명','어제종가']
+            # print(result_df)
+            lst_table = lst.to_html(classes='table table-striped')
+            result_table = result_df.to_html(classes='table table-striped')
+            return render_template('list.html', table=lst_table, favor_lst = result_table)
     except FileNotFoundError:
         return "Stock data file not found.", 404
     except Exception as e:
@@ -324,3 +321,4 @@ def my_page_check():
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port="443", debug=False,ssl_context="adhoc")
+
