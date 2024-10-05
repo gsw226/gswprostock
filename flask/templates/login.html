@@ -83,5 +83,10 @@
             <button id="submit" type="submit">Submit</button>
         </form>
     </div>
+    {%if msg%}
+    <script>
+        alert("{{msg}}")
+    </script>
+    {%endif%}
 </body>
 </html>

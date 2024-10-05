@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <title>my page</title>
         <style>
             body {
@@ -15,6 +16,26 @@
                 color: white;
             }
         </style>
+        <script>
+            function removeAccount(){
+                let a = 0;
+                const URL = "www.naver.com";
+                var remove = confirm("계정을 탈퇴하시겠습니까?");
+                if (remove){
+                    $.ajax({
+                        url: 'http://127.0.0.1/remove',
+                        type: 'POST',
+                        success: function(data) {
+                            console.log(data);
+                            location.href="/sign";
+                        },
+                        error: function(jqXHR, textStatus, errorThrown) {
+                            alert("실패");
+                        }
+                    });
+                }
+            }
+        </script>
     </head>
     <body>
         <h2>my page</h2>
@@ -31,6 +52,7 @@
             </form>
             <br/>
             <a href="/my/check"><button>Personal information</button></a>
+            <button onclick="removeAccount()">회원 탈퇴</button>
         </div>
     </body>
 </html>

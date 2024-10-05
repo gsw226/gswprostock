@@ -91,5 +91,10 @@
         </form>
         <a href="/login"><button>go to login</button></a>
     </div>
+    {%if msg%}
+    <script>
+        alert("{{msg}}")
+    </script>
+    {%endif%}
 </body>
 </html>

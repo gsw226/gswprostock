@@ -82,6 +82,23 @@
 				border-radius: 5px;
 				font-size: 1.2em;
 				z-index: 100;
+				display: inline-block;
+			}
+			.go-to-page {
+				position: absolute;
+				top: 10px;
+				left: 200px; /* Adjust as needed */
+				background-color: #3498db;
+				color: #ecf0f1;
+				padding: 10px 20px;
+				border-radius: 5px;
+				cursor: pointer;
+				transition: background-color 0.3s;
+				text-decoration: none;
+				display: inline-block;
+			}
+			.go-to-page:hover {
+				background-color: #2980b9;
 			}
 			.img-wrapper {
 				position: relative;
@@ -154,7 +171,7 @@
 				<button id="submit" type="submit">검색</button>
 			</form>
 			{% if stock_lst %}
-				<h2>탐색</h2>
+				<a href="/list"><h2>탐색</h2></a>
 				<p>{{ stock_lst[0] }}</p>
 				<p>{{ stock_lst[1] }}</p>
 				<p>{{ stock_lst[2] }}</p>
@@ -175,12 +192,11 @@
 				<h2>매매/매도</h2>
 				<p>{{ expect }}</p>
 			{% endif %}
-			<a href="/list"><button>go to list</button></a>
-			<a href="/my"><button>go to my page</button></a>
 		</div>
 		<div class="right">
 			{% if stock_name %}
 			<div class="greeting">{{ stock_name }}</div>
+			<a href="/my" class="go-to-page">{{ uid }}</a>
 			{% endif %}
 			{%if imgdata %}
 			<div class="img-wrapper">

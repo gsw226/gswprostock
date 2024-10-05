@@ -197,9 +197,9 @@ def a(num):
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,stock_lst=stock_lst)
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,stock_lst=stock_lst,uid=uid)
             else: 
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name)
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,uid=uid)
     else:
         return redirect('/sign')
     
@@ -215,19 +215,20 @@ def sign():
         password_2 = request.form.get('password_2', '')
         
         if email == '' or password == '':
-            return redirect('/sign')
+            return render_template('/sign.html' , msg = "아이디 또는 비밀번호를 입력하세요.")
         
         if re.match(password_pattern, password):
             if password == password_2:
                 hashed_password = hash_password(password)
+                #이메일 중복검사
                 new_user = User(email=email, password=hashed_password, account=10000000)
                 db.session.add(new_user)
                 db.session.commit()
-                return render_template('login.html')
+                return render_template('login.html', msg = "성공적으로 회원가입 완료")
             else: 
-                return redirect('/sign')
+                return render_template('/sign.html', msg = "비밀번호가 일치하지 않습니다.")
         else:
-            return redirect('/sign')
+            return render_template('/sign.html', msg = "비밀번호 규칙을 확인하세요.")
     else:
         return render_template('sign.html')
 
@@ -318,6 +319,11 @@ def my_page_check():
                 return render_template('real_my/')
         
     return render_template('my_check.html')
+
+@app.route("/remove", methods=['POST'])
+def remove_account():
+    #print()
+    return "success", 200
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port="443", debug=False,ssl_context="adhoc")
