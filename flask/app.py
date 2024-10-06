@@ -17,6 +17,11 @@ from controller import unhash_password
 from controller import decide
 from controller import code_to_name
 from sqlalchemy.exc import IntegrityError
+# import subprocess
+# import schedule
+# import time
+# import threading
+
 
 
 db = SQLAlchemy()
@@ -49,6 +54,20 @@ class own(db.Model):
     # method = db.Column(db.String(120), nullable=False)
 with app.app_context():
     db.create_all()
+
+# def scheduled_task():
+#     print("Scheduled task running...")
+#     # 외부 파이썬 스크립트 실행
+#     subprocess.run(["python3", "external_script.py"])
+
+# # 스케줄 설정: 매일 15:30에 작업 실행
+# schedule.every().day.at("15:30").do(scheduled_task)
+
+# # 백그라운드에서 스케줄러를 실행하는 함수
+# def run_scheduler():
+#     while True:
+#         schedule.run_pending()  # 실행할 작업이 있는지 확인
+#         time.sleep(1)
 
 @app.route('/' ,methods=['POST','GET'])
 def index():
@@ -119,7 +138,9 @@ def a(num):
     sma_expect = []
     sma_expect_profit = []
     expect = ''
-    stock_name = request.args.get('name') or 0
+    # stock_name = request.args.get('name') or 0
+    stock_name = code_to_name(num)
+    print(stock_name)
     sma5_ = 0
     sma20_ = 0
     sma100_ = 0
@@ -220,11 +241,14 @@ def sign():
         if re.match(password_pattern, password):
             if password == password_2:
                 hashed_password = hash_password(password)
-                #이메일 중복검사
-                new_user = User(email=email, password=hashed_password, account=10000000)
-                db.session.add(new_user)
-                db.session.commit()
-                return render_template('login.html', msg = "성공적으로 회원가입 완료")
+                user = User.query.filter_by(email=email).first()
+                if user != email:
+                    new_user = User(email=email, password=hashed_password, account=10000000)
+                    db.session.add(new_user)
+                    db.session.commit()
+                    return render_template('login.html', msg = "성공적으로 회원가입 완료")
+                else:
+                    return render_template('/sign.html', msg = "이메일이 중복 됩니다.")
             else: 
                 return render_template('/sign.html', msg = "비밀번호가 일치하지 않습니다.")
         else:
@@ -252,9 +276,6 @@ def login():
             return render_template('login.html')
     else:
         return render_template('login.html')
-        
-#stock_name -> code
-#stock_code -> name
 
 @app.route('/list', methods=['POST', 'GET'])
 def list_stock():
@@ -326,5 +347,9 @@ def remove_account():
     return "success", 200
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port="443", debug=False,ssl_context="adhoc")
+    
+    # scheduler_thread = threading.Thread(target=run_scheduler)
+    # scheduler_thread.daemon = True  # 메인 스레드가 종료되면 함께 종료
+    # scheduler_thread.start()
 
+    app.run(host="0.0.0.0", port="443", debug=False,ssl_context="adhoc")
