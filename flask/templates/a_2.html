@@ -142,7 +142,7 @@
 		<div class="container">
 			<form action="/" method="POST">
 				<div class="form-group">
-					<input type="text" id="stock_name" name="stock_name" value="" placeholder="종목 이름을 입력하세요">
+					<input type="text" id="stock_name" value="{{stock_name}}"name="stock_name" value="" placeholder="종목 이름을 입력하세요">
 				</div>
 				<div class="form-group">
 					<input type="checkbox" id="sma5" name="sma5" value="sma5">
@@ -169,6 +169,24 @@
 					<label for="favor">즐겨찾기</label>
 				</div>
 				<button id="submit" type="submit">검색</button>
+				<br/>
+				<div class="button-group">
+					<button id="buy" type="button" onclick="location.href='/buy'">구매</button>
+					<button id="sell" type="button" onclick="location.href='/sell'">판매</button>
+				</div>
+				<style>
+					.button-group {
+						display: flex;
+						justify-content: space-between;
+						gap: 10px; /* Add a gap between the buttons */
+					}
+					.button-group button{
+						width: 48%;
+					}
+					#sell {
+						background-color: rgba(47, 0, 255, 0.3)
+					}
+				</style>
 			</form>
 			{% if stock_lst %}
 				<a href="/list"><h2>탐색</h2></a>

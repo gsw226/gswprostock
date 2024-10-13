@@ -9,6 +9,8 @@ from passlib.hash import pbkdf2_sha256
 
 
 
+
+
 def crawling(stock_code):
     pd.set_option('display.max_columns', None)
     pd.set_option('display.max_rows', None)

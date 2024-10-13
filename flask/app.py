@@ -7,6 +7,7 @@ from flask_migrate import Migrate
 import pandas as pd
 import base64
 import re
+
 from controller import crawling
 from controller import name_to_code
 from controller import calculate_expected
@@ -17,11 +18,14 @@ from controller import unhash_password
 from controller import decide
 from controller import code_to_name
 from sqlalchemy.exc import IntegrityError
-# import subprocess
-# import schedule
-# import time
-# import threading
 
+import subprocess
+import schedule
+import time
+import threading
+
+import time
+from datetime import datetime
 
 
 db = SQLAlchemy()
@@ -55,19 +59,48 @@ class own(db.Model):
 with app.app_context():
     db.create_all()
 
-# def scheduled_task():
-#     print("Scheduled task running...")
-#     # 외부 파이썬 스크립트 실행
-#     subprocess.run(["python3", "external_script.py"])
+# Define the function to be executed via subprocess and log output in real-time
+def my_scheduled_function():
+    print("Executing crawling.py at 15:00")
+    
+    # Use subprocess to run crawling.py and log output in real-time
+    command = ['python', 'crawling.py']
+    try:
+        # Use Popen to allow real-time logging
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-# # 스케줄 설정: 매일 15:30에 작업 실행
-# schedule.every().day.at("15:30").do(scheduled_task)
+        # Continuously read stdout and stderr in real-time
+        for line in process.stdout:
+            print(line, end="")  # Print each line to the console in real-time
+        
+        # Read and print any errors
+        for error_line in process.stderr:
+            print("Error:", error_line, end="")
 
-# # 백그라운드에서 스케줄러를 실행하는 함수
-# def run_scheduler():
-#     while True:
-#         schedule.run_pending()  # 실행할 작업이 있는지 확인
-#         time.sleep(1)
+        # Wait for the process to finish
+        process.wait()
+        print("crawling.py completed with return code", process.returncode)
+
+    except Exception as e:
+        print(f"Failed to run crawling.py: {e}")
+
+def check_time():
+    while True:
+        current_time = datetime.now().time()
+        target_time = datetime.strptime("15:40:00", "%H:%M:%S").time()
+        print(current_time)
+        print(target_time)
+        if current_time.hour == target_time.hour and current_time.minute == target_time.minute:
+            my_scheduled_function()
+            time.sleep(60)
+        time.sleep(10)  
+
+def start_background_task():
+    thread = threading.Thread(target=check_time)
+    thread.daemon = True 
+    thread.start()  
+
+
 
 @app.route('/' ,methods=['POST','GET'])
 def index():
@@ -177,9 +210,20 @@ def a(num):
                     db.session.commit()
                 else:
                     print('종복')
+            close_df = pd.read_csv("./stock_data.csv")
+            close_df.drop(close_df.columns[3], axis=1, inplace=True)
+            print(close_df.head(10).to_string())
+
+            favorite_stocks = favorite.query.filter_by(email=uid).all()
+            print(favorite_stocks)
+            favorite_stock_names = [fav.stock_name for fav in favorite_stocks]
+            print(favorite_stock_names)
+            # filtered_close_df = close_df[close_df['단축코드'].isin(favorite_stock_names)]
+            
+            # print(filtered_close_df.head(10).to_string())
+            
             if num != 0:
                 df = crawling(num)
-                # print(sort_df)
                 sort_df = sum(df)   
                 sma5_expect = calculate_expected(sort_df['sma5'],5, degree=2)
                 sma20_expect= calculate_expected(sort_df['sma20'],20, degree=3)
@@ -347,9 +391,6 @@ def remove_account():
     return "success", 200
 
 if __name__ == '__main__':
-    
-    # scheduler_thread = threading.Thread(target=run_scheduler)
-    # scheduler_thread.daemon = True  # 메인 스레드가 종료되면 함께 종료
-    # scheduler_thread.start()
-
-    app.run(host="0.0.0.0", port="443", debug=False,ssl_context="adhoc")
+    print(datetime.now())
+    start_background_task()
+    app.run(host="0.0.0.0", port="443", debug=True,ssl_context="adhoc")
