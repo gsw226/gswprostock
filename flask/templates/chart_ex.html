@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>캔들차트 및 이동평균선</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+<body>
+    <div id="chart"></div>
+    <script>
+        // Flask 서버에서 주입된 데이터
+        const candlestickData = {{ candlestick_data | tojson }};
+        const sma5Data = {{ sma5_data | tojson }};
+        console.log(candlestickData);
+        console.log(sma5Data);
+
+
+        // 이동평균선 데이터 형식 변환
+        const formattedSma5Data = sma5Data.map(item => ({
+            x: new Date(item.x).getTime(),
+            y: item.y
+        }));
+        // ApexCharts 옵션 설정
+        const options = {
+            chart: {
+                height: 350,
+                type: 'candlestick',
+            },
+            series: [
+                {
+                    name: 'line',
+                    type: 'line',
+                    data: formattedSma5Data,
+                },
+                {
+                    name: 'candle',
+                    type: 'candlestick',
+                    data: candlestickData
+                }
+            ],
+            title: {
+                text: '캔들차트 및 5일 이동평균선',
+                align: 'center'
+            },
+            xaxis: {
+                type: 'datetime'
+            },
+            yaxis: {
+                tooltip: {
+                    enabled: true
+                }
+            },
+            stroke: {
+                width: [3, 1]
+            },
+        };
+
+
+        // 차트 생성
+        const chart = new ApexCharts(document.querySelector("#chart"), options);
+        chart.render();
+    </script>
+</body>
+</html>

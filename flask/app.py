@@ -142,25 +142,25 @@ def ma(stock_name, sma5_, sma20_, sma100_, upper_, lower_, sort_df=None):
     # return "<div>Not found File</div>"
 
 
-# @app.route('/buy', methods=['GET'])
-# def buy():
-#     if request.method == 'GET':
-#         #세션에서 내이름 뽑기
-#         uid = session.get('uid','')
+@app.route('/buy', methods=['POST', 'GET'])  # POST와 GET 메서드 모두 허용
+def buy():
+    if request.method == 'POST':
+        uid = session.get('uid', '')
+        print('1111')
+        if uid != '':
+            print('222')
+            close_df = pd.read_csv('stock_data.csv')
+            close_df.drop(close_df.columns[3], axis=1, inplace=True)
+            buy = request.form.get('stock_name')
+            print(buy)
+            if buy == 'buy':
+                user_account = User.query.filter_by(email=uid).first().account
+                print(user_account)
 
-#         stock_code = 5930
-#         #내 이름으로 보유금액 가져오기
-#         user = User.query.filter_by(email=uid)
-
-#         df = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv')
-#         filtered_df = df[df['stock_code'] == stock_code]
-#         print(filtered_df)
-#         #보유금액에서 구매가격 만큼 차감 가져온걸 그대로 저장
-
-#         #내 돈에서 주식현재가격 빼고, 저장
-#         #차감되었으면, 구매해 own테이블에 담기
-#         #own도 저  장
-#         return redirect('/')
+        return redirect('/')
+    print('33')
+    # GET 요청 처리
+    return render_template('buy.html')  # GET 요청 시 buy.html 템플릿을 렌더링
      
 
 @app.route('/chart/<num>', methods=['POST', 'GET'])
