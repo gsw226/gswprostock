@@ -4,6 +4,7 @@
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 		{% if stock_name %}
 		<title>{{stock_name}}</title>
 		{%endif%}
@@ -15,8 +16,8 @@
 				font-family: 'Arial', sans-serif;
 				color: #ecf0f1;
 				display: flex;
-				justify-content: center;
-				align-items: center;
+				justify-content: space-around;
+				flex-direction: column;
 				height: 100vh;
 				overflow: hidden;
 			}
@@ -26,7 +27,7 @@
 				border-radius: 10px;
 				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 				max-width: 400px;
-				width: 100%;
+				width: 20%;
 				height: 80vh;
 				overflow-y: auto; /* Make container scrollable */
 			}
@@ -73,21 +74,16 @@
 				background-color: #c0392b;
 			}
 			.greeting {
-				position: absolute;
-				top: 10px;
-				left: 10px;
 				background-color: rgba(236, 240, 241, 0.8);
 				color: #2c3e50;
 				padding: 5px 10px;
 				border-radius: 5px;
 				font-size: 1.2em;
 				z-index: 100;
-				display: inline-block;
+				height: fit-content;
+				margin-left: 2%;
 			}
 			.go-to-page {
-				position: absolute;
-				top: 10px;
-				left: 200px; /* Adjust as needed */
 				background-color: #3498db;
 				color: #ecf0f1;
 				padding: 10px 20px;
@@ -95,12 +91,14 @@
 				cursor: pointer;
 				transition: background-color 0.3s;
 				text-decoration: none;
-				display: inline-block;
+				display: block;
+				height: fit-content;
+				margin-right: 2%;
 			}
 			.go-to-page:hover {
 				background-color: #2980b9;
 			}
-			.img-wrapper {
+			/* .img-wrapper {
 				position: relative;
 				width: 80vw;
 				height: 100vh;
@@ -112,12 +110,13 @@
 				left: 0;
 				width: 100%;
 				clip-path: inset(0 0 0 7%);
-				background-color: #2c3e50;
-			}
+				background-color: #2c3e50; */
+			/* } */
 			.right {
 				display: flex;
 				flex-direction: column;
 				align-items: center;
+				width: 80%;
 			}
 			.right a button {
 				background-color: #3498db;
@@ -136,91 +135,199 @@
 				margin: 0px;
 				margin-bottom: 10px;
 			}
+			.content {
+				display: flex;
+				justify-content: space-between;
+				flex-direction: row;
+				width:100%;
+				height: 90%;
+			}
+			#chart{
+				width: 97%;
+				z-index: 1000;
+				height: 70%;
+				background-color: white;
+			}
+			.header{
+				height: 7%;
+				display: flex;
+				flex-direction: row;
+				justify-content: space-between;
+				align-items: center;
+			}
 		</style>
 	</head>
 	<body>
-		<div class="container">
-			<form action="/" method="POST">
-				<div class="form-group">
-					<input type="text" id="stock_name" value="{{stock_name}}"name="stock_name" value="" placeholder="종목 이름을 입력하세요">
-				</div>
-				<div class="form-group">
-					<input type="checkbox" id="sma5" name="sma5" value="sma5">
-					<label for="sma5">sma5</label>
-				</div>
-				<div class="form-group">
-					<input type="checkbox" id="sma20" name="sma20" value="sma20">
-					<label for="sma20">sma20</label>
-				</div>
-				<div class="form-group">
-					<input type="checkbox" id="sma100" name="sma100" value="sma100">
-					<label for="sma100">sma100</label>
-				</div>
-				<div class="form-group">
-					<input type="checkbox" id="upper" name="upper" value="upper">
-					<label for="upper">upper</label>
-				</div>
-				<div class="form-group">
-					<input type="checkbox" id="lower" name="lower" value="lower">
-					<label for="lower">lower</label>
-				</div>
-				<div class="form-group">
-					<input type="checkbox" id="favor" name="favor" value="favor">
-					<label for="favor">즐겨찾기</label>
-				</div>
-				<button id="submit" type="submit">검색</button>
-				<br/>
-				<div class="button-group">
-					<button id="buy" type="button" onclick="location.href='/buy'">구매</button>
-					<button id="sell" type="button" onclick="location.href='/sell'">판매</button>
-				</div>
-				<style>
-					.button-group {
-						display: flex;
-						justify-content: space-between;
-						gap: 10px; /* Add a gap between the buttons */
-					}
-					.button-group button{
-						width: 48%;
-					}
-					#sell {
-						background-color: rgba(47, 0, 255, 0.3)
-					}
-				</style>
-			</form>
-			{% if stock_lst %}
-				<a href="/list"><h2>탐색</h2></a>
-				<p>{{ stock_lst[0] }}</p>
-				<p>{{ stock_lst[1] }}</p>
-				<p>{{ stock_lst[2] }}</p>
-			{% endif %}
-			{% if lst1 %}
-				<h2>명일 예상 종가</h2>
-				<p>sma5: {{ lst1[0] }}원</p>
-				<p>sma20: {{ lst1[1] }}원</p>
-				<p>sma100: {{ lst1[2] }}원</p>
-			{% endif %}
-			{% if lst2 %}
-				<h2>명일 종가에 대한 순수익</h2>
-				<p>sma5: {{ lst2[0] }}원</p>
-				<p>sma20: {{ lst2[1] }}원</p>
-				<p>sma100: {{ lst2[2] }}원</p>
-			{% endif %}
-			{% if expect %}
-				<h2>매매/매도</h2>
-				<p>{{ expect }}</p>
-			{% endif %}
-		</div>
-		<div class="right">
+		<div class="header">
 			{% if stock_name %}
 			<div class="greeting">{{ stock_name }}</div>
 			{% endif %}
 			<a href="/my" class="go-to-page">{{ uid }}</a>
-			{%if imgdata %}
-			<div class="img-wrapper">
-				<img src="data:image/png;base64,{{ imgdata }}">
-			</div>
-			{%endif%}
 		</div>
+		<div class="content">
+			<div class="container">
+				<form action="/" method="POST">
+					<div class="form-group">
+						<input type="text" id="stock_name" value="{{stock_name}}" name="stock_name" placeholder="종목 이름을 입력하세요">
+					</div>
+					<!-- <div class="form-group">
+						<input type="checkbox" id="sma5" name="sma5" value="sma5" checked>
+						<label for="sma5">sma5</label>
+					</div>
+					<div class="form-group">
+						<input type="checkbox" id="sma20" name="sma20" value="sma20" checked>
+						<label for="sma20">sma20</label>
+					</div>
+					<div class="form-group">
+						<input type="checkbox" id="sma100" name="sma100" value="sma100" checked>
+						<label for="sma100">sma100</label>
+					</div>
+					<div class="form-group">
+						<input type="checkbox" id="upper" name="upper" value="upper" checked>
+						<label for="upper">upper</label>
+					</div>
+					<div class="form-group">
+						<input type="checkbox" id="lower" name="lower" value="lower" checked>
+						<label for="lower">lower</label>
+					</div> -->
+					<div class="form-group">
+						<input type="checkbox" id="favor" name="favor" value="favor">
+						<label for="favor">즐겨찾기</label>
+					</div>
+					<button id="submit" type="submit">검색</button>
+					<br/>
+					<div class="button-group">
+						<button id="buy" type="button" onclick="location.href='/buy/{{num}}'">구매</button>
+						<button id="sell" type="button" onclick="location.href='/sell/{{num}}'">판매</button>
+					</div>
+					<style>
+						.button-group {
+							display: flex;
+							justify-content: space-between;
+							gap: 10px; /* Add a gap between the buttons */
+						}
+						.button-group button{
+							width: 48%;
+						}
+						#sell {
+							background-color: rgba(47, 0, 255, 0.3)
+						}
+					</style>
+				</form>
+				{% if stock_lst %}
+					<a href="/list"><h2>탐색</h2></a>
+					<p>{{ stock_lst[0] }}</p>
+					<p>{{ stock_lst[1] }}</p>
+					<p>{{ stock_lst[2] }}</p>
+				{% endif %}
+				{% if lst1 %}
+					<h2>명일 예상 종가</h2>
+					<p>sma5: {{ lst1[0] }}원</p>
+					<p>sma20: {{ lst1[1] }}원</p>
+					<p>sma100: {{ lst1[2] }}원</p>
+				{% endif %}
+				{% if lst2 %}
+					<h2>명일 종가에 대한 순수익</h2>
+					<p>sma5: {{ lst2[0] }}원</p>
+					<p>sma20: {{ lst2[1] }}원</p>
+					<p>sma100: {{ lst2[2] }}원</p>
+				{% endif %}
+				{% if expect %}
+					<h2>매매/매도</h2>
+					<p>{{ expect }}</p>
+				{% endif %}
+			</div>
+	
+			<div class="right">
+				<div id="chart"></div>
+			</div>
+		</div>
+		
+		
+		<script>
+			// Flask 서버에서 주입된 데이터
+			const candlestickData = {{ candlestick_data | tojson | default('[]') }};
+			const sma5Data = {{ sma5_data | tojson | default('[]') }};
+			const sma20Data = {{ sma20_data | tojson | default('[]') }};
+			const sma100Data = {{ sma100_data | tojson | default('[]') }};
+			const upperData = {{ upper_data | tojson | default('[]') }};
+			const lowerData = {{ lower_data | tojson | default('[]') }};
+			console.log(candlestickData);
+			console.log(sma5Data);
+			// console.log(sma20Data);
+			// console.log(sma100Data);
+			// console.log(upperData);
+			// console.log(lowerData);
+			var stock_name_lst = document.getElementsByClassName("greeting");
+			const stock_name = stock_name_lst[0].textContent;
+			console.log(stock_name);
+
+			// ApexCharts 옵션 설정
+			const options = {
+				chart: {
+					height: 350,
+					type: 'candlestick',
+				},
+				series: [
+					{
+						name: 'sma5',
+						type: 'line',
+						data: sma5Data,
+						color: '#008FFB'
+					}, 
+					{
+						name: 'sma20',
+						type: 'line',
+						data: sma20Data,
+						color: '#00E496'
+					},
+					{
+						name: 'sma100',
+						type: 'line',
+						data: sma100Data,
+						color: '#775DD0'
+					},
+					{
+						name: 'upper',
+						type: 'line',
+						data: upperData,
+						color: '#FFB01B'
+					},
+					{
+						name: 'lower',
+						type: 'line',
+						data: lowerData,
+						color: '#FFB01B'
+
+					},
+					{
+						name: 'candle',
+						type: 'candlestick',
+						data: candlestickData.candlestick,
+					}
+				],
+				stroke: { curve: 'smooth' },
+				title: {
+					text: stock_name,
+					color: 'black',
+					align: 'center'
+				},
+				xaxis: {
+					type: 'datetime'
+				},
+				yaxis: {
+					tooltip: {
+						enabled: true
+					}
+				},
+				stroke: {
+					width: 1
+				},
+			};
+
+			// 차트 생성
+			const chart = new ApexCharts(document.querySelector("#chart"), options);
+			chart.render();
+		</script>
 	</body>
 </html>

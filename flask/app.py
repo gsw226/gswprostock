@@ -50,9 +50,10 @@ class favorite(db.Model):
 class own(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False)
-    date_time = db.Column(db.Integer, nullable=False)
     stock_name = db.Column(db.String(80), nullable=False)
+    date_time = db.Column(db.Integer, nullable=False)
     buy_sell = db.Column(db.Integer, nullable=False)
+    many = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Integer, nullable=False)
     # percent = db.Column(db.Real, nullable=False)
     # method = db.Column(db.String(120), nullable=False)
@@ -121,15 +122,15 @@ def index():
         stock_name = request.form.get('stock_name')
         num = name_to_code(stock_name=stock_name)
         stock_number = str(num)
-        sma5_ = request.form.get('sma5') or ''
-        sma20_ = request.form.get('sma20') or ''
-        sma100_ = request.form.get('sma100') or ''
-        upper_ = request.form.get('upper') or ''
-        lower_ = request.form.get('lower') or ''
+        # sma5_ = request.form.get('sma5') or ''
+        # sma20_ = request.form.get('sma20') or ''
+        # sma100_ = request.form.get('sma100') or ''
+        # upper_ = request.form.get('upper') or ''
+        # lower_ = request.form.get('lower') or ''
         favor = request.form.get('favor') or ''
-        print(sma5_,sma20_,sma100_,upper_,lower_,favor)
-        options = ','.join(val for val in [sma5_, sma20_, sma100_, upper_, lower_, favor] if val)
-        url = f"/chart/{stock_number}?options={options}&name={stock_name}"
+        # print(sma5_,sma20_,sma100_,upper_,lower_,favor)
+        options = ','.join(val for val in [favor] if val)
+        url = f"/chart/{stock_number}?name={stock_name}"
     return redirect(url)
 
 
@@ -142,25 +143,42 @@ def ma(stock_name, sma5_, sma20_, sma100_, upper_, lower_, sort_df=None):
     # return "<div>Not found File</div>"
 
 
-@app.route('/buy', methods=['POST', 'GET'])  # POST와 GET 메서드 모두 허용
-def buy():
+@app.route('/buy/<num>', methods=['POST', 'GET'])  # POST와 GET 메서드 모두 허용
+def buy(num):
+    buy = request.form.get('stock_name')
+    number = request.form.get('number')
+    uid = session.get('uid', '')
+    stock_name = code_to_name(num)
+    print(stock_name)
+    
     if request.method == 'POST':
-        uid = session.get('uid', '')
-        print('1111')
+        # print('1111')
         if uid != '':
             print('222')
             close_df = pd.read_csv('stock_data.csv')
             close_df.drop(close_df.columns[3], axis=1, inplace=True)
-            buy = request.form.get('stock_name')
-            print(buy)
-            if buy == 'buy':
-                user_account = User.query.filter_by(email=uid).first().account
-                print(user_account)
+            
+            # 수정된 부분: or 대신 | 사용
+            filtered_df = close_df[(close_df['한글 종목약명'] == stock_name) | (close_df['한글 종목명'] == stock_name)]
+            print(filtered_df['어제종가'].iloc[0])
+            price= filtered_df['어제종가'].iloc[0]
+            # filtered_df가 비어있지 않은지 확인
+            if not filtered_df.empty:
+                if buy == 'buy':
+                    user_account = User.query.filter_by(email=uid).first().account
+                    new_own = own(email=uid, stock_name=stock_name, date_time=20240226, buy_sell='buy',many=number,price=price)
+                    db.session.add(new_own)
+                    db.session.commit()
 
+                    # print(user_account)
+            else:
+                print("해당 주식이 없습니다.")  # 주식이 없는 경우 처리
+            
         return redirect('/')
+    
     print('33')
     # GET 요청 처리
-    return render_template('buy.html')  # GET 요청 시 buy.html 템플릿을 렌더링
+    return render_template('buy.html', stock_name=stock_name, num=num)  # GET 요청 시 buy.html 템플릿을 렌더링
      
 
 @app.route('/chart/<num>', methods=['POST', 'GET'])
@@ -174,11 +192,11 @@ def a(num):
     # stock_name = request.args.get('name') or 0
     stock_name = code_to_name(num)
     print(stock_name)
-    sma5_ = 0
-    sma20_ = 0
-    sma100_ = 0
-    upper_ = 0
-    lower_ = 0
+    # sma5_ = 0
+    # sma20_ = 0
+    # sma100_ = 0
+    # upper_ = 0
+    # lower_ = 0
     sort_df = pd.DataFrame
     if uid != '':
         if request.method == 'GET':
@@ -262,9 +280,82 @@ def a(num):
                 img = img.encode('utf-8')
             if img != '':
                 img = base64.b64encode(img).decode('utf-8')
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,stock_lst=stock_lst,uid=uid)
+                candlestick_data = [
+                    {
+                        'x': index,
+                        'y': [row['open'], row['high'], row['low'], row['close']]
+                    }
+                    for index, row in sort_df.iterrows()
+                ]
+                sma5_data = [
+                    {
+                        'x': index,
+                        'y': 0 if pd.isna(row['sma5']) else row['sma5']
+                    }
+                    for index, row in sort_df.iterrows()
+                ]
+                # 추가된 데이터
+                sma20_data = [
+                    {
+                        'x': index,
+                        'y': 0 if pd.isna(row['sma20']) else row['sma20']
+                    }
+                    for index, row in sort_df.iterrows()
+                ]
+                sma100_data = [
+                    {
+                        'x': index,
+                        'y': 0 if pd.isna(row['sma100']) else row['sma100']
+                    }
+                    for index, row in sort_df.iterrows()
+                ]
+                upper_data = [
+                    {
+                        'x': index,
+                        'y': 0 if pd.isna(row['upper']) else row['upper']
+                    }
+                    for index, row in sort_df.iterrows()
+                ]
+                lower_data = [
+                    {
+                        'x': index,
+                        'y': 0 if pd.isna(row['lower']) else row['lower']
+                    }
+                    for index, row in sort_df.iterrows()
+                ]
+                # 그래프에 추가할 데이터 리스트
+                all_data = {
+                    'candlestick': candlestick_data,
+                    'sma5': sma5_data,
+                    'sma20': sma20_data,
+                    'sma100': sma100_data,
+                    'upper': upper_data,
+                    'lower': lower_data
+                }
+                # 데이터가 없을 경우 빈 리스트로 초기화
+                sma5_data = sma5_data if sma5_data is not None else []
+                sma20_data = sma20_data if sma20_data is not None else []
+                sma100_data = sma100_data if sma100_data is not None else []
+                upper_data = upper_data if upper_data is not None else []
+                lower_data = lower_data if lower_data is not None else []
+
+                return render_template('a_2.html', 
+                                       imgdata=img,
+                                       lst1=sma_expect,
+                                       lst2=sma_expect_profit,
+                                       expect=expect,
+                                       stock_name=stock_name,
+                                       stock_lst=stock_lst,
+                                       uid=uid,
+                                       candlestick_data=all_data,
+                                       sma5_data=sma5_data,  # 추가
+                                       sma20_data=sma20_data,  # 추가
+                                       sma100_data=sma100_data,  # 추가
+                                       upper_data=upper_data,  # 추가
+                                       lower_data=lower_data,  # 추가
+                                       num=num)
             else: 
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,uid=uid)
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,uid=uid,candlestick_data=sort_df,num=num)
     else:
         return redirect('/sign')
     

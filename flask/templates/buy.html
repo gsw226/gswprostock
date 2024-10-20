@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html lang="ko">
     <head>
-
+        <title>{{ stock_name }}</title>
     </head>
     <body>
         <!-- 여기에 해당 주식의 어제종가 띄우고 -->
-        <form action="/buy" method="POST">
-            <input type="button" value="buy">구매 하실건가요?</input>
-            <input type="button" value="no">홈으로 돌아가기</input>
+        <form action="/buy/{{ num }}" method="POST">
+            <input type="hidden" name="stock_name" value="buy">
+            <input type="number" name="number"/>
+            <input type="submit" value="buy">
         </form>
+        <!-- 보유 주식 
+                손익
+            현재 시가 -->
+        <a href="/"><button>go to home</button></a>
     </body>
 </html>
