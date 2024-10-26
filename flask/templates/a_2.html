@@ -9,6 +9,7 @@
 		<title>{{stock_name}}</title>
 		{%endif%}
 		<title>주가 예측</title>
+		
 		<style>
 			body {
 				background-color: #2c3e50;
@@ -155,6 +156,24 @@
 				justify-content: space-between;
 				align-items: center;
 			}
+			.investment_container{
+				display: flex;
+				flex-direction: row;
+				justify-content: space-around;
+				width:100%;
+				margin-top:-100px;
+				z-index: 10000;
+				background-color: rgb(18, 18, 18);
+			}
+			.investment_container :nth-child(1){
+				flex: 2;
+			}
+			.investment_container_content{
+				flex: 7;
+				display: flex;
+				justify-content: flex-start;
+				align-items: center;
+			}
 		</style>
 	</head>
 	<body>
@@ -240,6 +259,45 @@
 	
 			<div class="right">
 				<div id="chart"></div>
+				<div class="investment_container">
+					<div>
+						<h2>현재 주가</h2>
+						{% if price %}
+						<p>{{price}}원</p>
+						{% endif %}
+						<h2>보유 주식 개수</h2>
+						<p>{{amount}}주</p>
+					</div>
+					<div class="investment_container_content">
+						<table>
+							<tr>
+								<th>날짜</th>
+								<td>20241024</td>
+								<td>20241024</td>
+								<td>20241024</td>
+							</tr>
+							<tr>
+								<th>거래</th>
+								<td>구매</td>
+								<td>구매</td>
+								<td>판매</td>
+							</tr>
+							<tr>
+								<th>주</th>
+								<td>4주</td>
+								<td>3주</td>
+								<td>1주</td>
+							</tr>
+							<tr>
+								<th>가격</th>
+								<td>2000</td>
+								<td>34242</td>
+								<td>30000</td>
+							</tr>
+						</table>
+					</div>
+					
+				</div>
 			</div>
 		</div>
 		
@@ -316,8 +374,12 @@
 					type: 'datetime'
 				},
 				yaxis: {
-					tooltip: {
-						enabled: true
+					// tooltip: {
+					// 	enabled: true	
+					labels: {
+						formatter: function (value) {  // y축 값 형식을 지정하는 함수
+						return value.toFixed(2);  // 소수점 2자리로 제한
+						}
 					}
 				},
 				stroke: {

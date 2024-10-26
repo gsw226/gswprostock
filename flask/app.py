@@ -40,7 +40,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
-    account = db.Column(db.Integer)
+    account = db.Column(db.Float)
 
 class favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -55,8 +55,7 @@ class own(db.Model):
     buy_sell = db.Column(db.Integer, nullable=False)
     many = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Integer, nullable=False)
-    # percent = db.Column(db.Real, nullable=False)
-    # method = db.Column(db.String(120), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
 with app.app_context():
     db.create_all()
 
@@ -130,7 +129,7 @@ def index():
         favor = request.form.get('favor') or ''
         # print(sma5_,sma20_,sma100_,upper_,lower_,favor)
         options = ','.join(val for val in [favor] if val)
-        url = f"/chart/{stock_number}?name={stock_name}"
+        url = f"/chart/{stock_number}?name={stock_name}&options={options}"
     return redirect(url)
 
 
@@ -166,11 +165,23 @@ def buy(num):
             if not filtered_df.empty:
                 if buy == 'buy':
                     user_account = User.query.filter_by(email=uid).first().account
-                    new_own = own(email=uid, stock_name=stock_name, date_time=20240226, buy_sell='buy',many=number,price=price)
-                    db.session.add(new_own)
-                    db.session.commit()
-
-                    # print(user_account)
+                    print(user_account)
+                    total_price = float(price) * float(number)
+                    existing_amount = own.query.filter_by(email=uid, stock_name=stock_name).order_by(own.date_time.desc()).first()
+                    if existing_amount:
+                        amount = existing_amount.many
+                        print(amount)
+                    else:
+                        amount = 0
+                    if user_account > total_price:
+                        total_amount = int(amount)+int(number)
+                        new_own = own(email=uid, stock_name=stock_name, date_time=datetime.now().strftime('%Y%m%d'), buy_sell='buy', many=number, price=price, amount=total_amount)
+                        db.session.add(new_own)
+                        user = User.query.filter_by(email=uid).first()
+                        user.account = user_account - total_price                        
+                        db.session.commit()
+                    else:
+                        print('자금이 부족합니다.')
             else:
                 print("해당 주식이 없습니다.")  # 주식이 없는 경우 처리
             
@@ -181,6 +192,54 @@ def buy(num):
     return render_template('buy.html', stock_name=stock_name, num=num)  # GET 요청 시 buy.html 템플릿을 렌더링
      
 
+@app.route('/sell/<num>', methods=['POST', 'GET'])  # POST와 GET 메서드 모두 허용
+def sell(num):
+    sell = request.form.get('stock_name')
+    number = request.form.get('number')
+    uid = session.get('uid', '')
+    stock_name = code_to_name(num)
+    print(stock_name)
+    
+    if request.method == 'POST':
+        # print('1111')
+        if uid != '':
+            print('222')
+            close_df = pd.read_csv('stock_data.csv')
+            close_df.drop(close_df.columns[3], axis=1, inplace=True)
+            
+            # 수정된 부분: or 대신 | 사용
+            filtered_df = close_df[(close_df['한글 종목약명'] == stock_name) | (close_df['한글 종목명'] == stock_name)]
+            print(filtered_df['어제종가'].iloc[0])
+            price= filtered_df['어제종가'].iloc[0]
+            # filtered_df가 비어있지 않은지 확인
+            if not filtered_df.empty:
+                if sell == 'sell':
+                    user_account = User.query.filter_by(email=uid).first().account
+                    print(user_account)
+                    total_price = float(price) * float(number)
+                    existing_amount = own.query.filter_by(email=uid, stock_name=stock_name).order_by(own.date_time.desc()).first()
+                    if existing_amount:
+                        amount = existing_amount.amount
+                    else:
+                        amount = 0
+                    if amount != 0:
+                        total_amount = amount-int(number)
+                        new_own = own(email=uid, stock_name=stock_name, date_time=datetime.now().strftime('%Y%m%d'), buy_sell='sell', many=number, price=price, amount= total_amount)
+                        db.session.add(new_own)
+                        user = User.query.filter_by(email=uid).first()
+                        user.account = user_account + total_price                        
+                        db.session.commit()
+                    else:
+                        print('보유 주식이 없습니다.')
+            else:
+                print("해당 주식이 없습니다.")  # 주식이 없는 경우 처리
+            
+        return redirect('/')
+    
+    print('33')
+    # GET 요청 처리
+    return render_template('sell.html', stock_name=stock_name, num=num)
+
 @app.route('/chart/<num>', methods=['POST', 'GET'])
 def a(num):
     uid = session.get('uid','')
@@ -189,15 +248,29 @@ def a(num):
     sma_expect = []
     sma_expect_profit = []
     expect = ''
-    # stock_name = request.args.get('name') or 0
     stock_name = code_to_name(num)
     print(stock_name)
-    # sma5_ = 0
-    # sma20_ = 0
-    # sma100_ = 0
-    # upper_ = 0
-    # lower_ = 0
-    sort_df = pd.DataFrame
+    close_df = pd.read_csv('stock_data.csv')
+    close_df.drop(close_df.columns[3], axis=1, inplace=True)
+
+    existing_amount = own.query.filter_by(email=uid, stock_name=stock_name).order_by(own.date_time.desc()).first()
+    if existing_amount:
+        amount = existing_amount.amount
+    else:
+        amount = 0
+    
+    # 수정된 부분: or 대신 | 사용
+    filtered_df = close_df[(close_df['한글 종목약명'] == stock_name) | (close_df['한글 종목명'] == stock_name)]
+    price= filtered_df['어제종가'].iloc[0]
+
+    # Initialize variables with default values
+    sma5_ = 0
+    sma20_ = 0
+    sma100_ = 0
+    upper_ = 0
+    lower_ = 0
+    sort_df = pd.DataFrame()
+    
     if uid != '':
         if request.method == 'GET':
             df = crawling(num)
@@ -206,20 +279,19 @@ def a(num):
             
             options = request.args.get('options', '').split(',')
             print(options)
-            if 'sma5' in options:
-                sma5_ = 'sma5'
-            if 'sma20' in options:
-                sma20_ = 'sma20'
-            if 'sma100' in options:
-                sma100_ = 'sma100'
-            if 'upper' in options:
-                upper_ = 'upper'
-            if 'lower' in options:
-                lower_ = 'lower'
+            # if 'sma5' in options:
+            #     sma5_ = 'sma5'
+            # if 'sma20' in options:
+            #     sma20_ = 'sma20'
+            # if 'sma100' in options:
+            #     sma100_ = 'sma100'
+            # if 'upper' in options:
+            #     upper_ = 'upper'
+            # if 'lower' in options:
+            #     lower_ = 'lower'
             if 'favor' in options:
                 favor = 'favor'
             if favor == 'favor':
-                # Check if the stock_name already exists for the user
                 existing_favorite = favorite.query.filter_by(email=uid, stock_name=stock_name).first()
                 if not existing_favorite:
                     print("INSERT")
@@ -231,15 +303,12 @@ def a(num):
             close_df = pd.read_csv("./stock_data.csv")
             close_df.drop(close_df.columns[3], axis=1, inplace=True)
             print(close_df.head(10).to_string())
-
+ 
             favorite_stocks = favorite.query.filter_by(email=uid).all()
             print(favorite_stocks)
             favorite_stock_names = [fav.stock_name for fav in favorite_stocks]
             print(favorite_stock_names)
-            # filtered_close_df = close_df[close_df['단축코드'].isin(favorite_stock_names)]
-            
-            # print(filtered_close_df.head(10).to_string())
-            
+             
             if num != 0:
                 df = crawling(num)
                 sort_df = sum(df)   
@@ -250,32 +319,32 @@ def a(num):
                 sma5_expect_profit = sma5_expect - df['close'].iloc[0]
                 sma20_expect_profit = sma20_expect - df['close'].iloc[0]
                 sma100_expect_profit = sma100_expect - df['close'].iloc[0]
-
+ 
                 sma5_expect_profit = round(sma5_expect_profit, 2)
                 sma20_expect_profit = round(sma20_expect_profit, 2)
                 sma100_expect_profit = round(sma100_expect_profit, 2)
-
+ 
                 sma5_expect = round(sma5_expect, 2)
                 sma20_expect= round(sma20_expect, 2)
                 sma100_expect= round(sma100_expect, 2)
-
+ 
                 sma_expect.append(sma5_expect)
                 sma_expect.append(sma20_expect)
                 sma_expect.append(sma100_expect)
-            
+             
                 sma_expect_profit.append(sma5_expect_profit)
                 sma_expect_profit.append(sma20_expect_profit)
                 sma_expect_profit.append(sma100_expect_profit)
                 expect = decide(sma_expect=sma_expect,sma_expect_profit=sma_expect_profit,sma5_expect_profit=sma5_expect_profit,sma20_expect_profit=sma20_expect_profit)
-            
+             
             results = favorite.query.filter_by(email=uid).all()
             print('result')
             print(results)
             stock_lst = [result.stock_name for result in results]
             stock_lst = stock_lst[-3:]  # 가장 밑에 있는 3개
             stock_lst = stock_lst + [0] * (3 - len(stock_lst))
-            img = ma(stock_name,sma5_,sma20_,sma100_,upper_,lower_,sort_df)
-
+            img = ma(stock_name, sma5_, sma20_, sma100_, upper_, lower_, sort_df)
+ 
             if type(img) != bytes:
                 img = img.encode('utf-8')
             if img != '':
@@ -290,7 +359,7 @@ def a(num):
                 sma5_data = [
                     {
                         'x': index,
-                        'y': 0 if pd.isna(row['sma5']) else row['sma5']
+                        'y': sort_df['sma5'].iloc[4]*0.9 if pd.isna(row['sma5']) else row['sma5']
                     }
                     for index, row in sort_df.iterrows()
                 ]
@@ -298,28 +367,28 @@ def a(num):
                 sma20_data = [
                     {
                         'x': index,
-                        'y': 0 if pd.isna(row['sma20']) else row['sma20']
+                        'y': sort_df['sma20'].iloc[19]*0.9 if pd.isna(row['sma20']) else row['sma20']
                     }
                     for index, row in sort_df.iterrows()
                 ]
                 sma100_data = [
                     {
                         'x': index,
-                        'y': 0 if pd.isna(row['sma100']) else row['sma100']
+                        'y': sort_df['sma100'].iloc[99]*0.9 if pd.isna(row['sma100']) else row['sma100']
                     }
                     for index, row in sort_df.iterrows()
                 ]
                 upper_data = [
                     {
                         'x': index,
-                        'y': 0 if pd.isna(row['upper']) else row['upper']
+                        'y': sort_df['upper'].iloc[19]*0.9 if pd.isna(row['upper']) else row['upper']
                     }
                     for index, row in sort_df.iterrows()
                 ]
                 lower_data = [
                     {
                         'x': index,
-                        'y': 0 if pd.isna(row['lower']) else row['lower']
+                        'y': sort_df['lower'].iloc[19]*0.9 if pd.isna(row['lower']) else row['lower']
                     }
                     for index, row in sort_df.iterrows()
                 ]
@@ -353,9 +422,11 @@ def a(num):
                                        sma100_data=sma100_data,  # 추가
                                        upper_data=upper_data,  # 추가
                                        lower_data=lower_data,  # 추가
-                                       num=num)
+                                       num=num,
+                                       price=price,
+                                       amount=amount)
             else: 
-                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,uid=uid,candlestick_data=sort_df,num=num)
+                return render_template('a_2.html',imgdata = img ,lst1 = sma_expect,lst2 = sma_expect_profit, expect = expect, stock_name = stock_name,uid=uid,candlestick_data=sort_df,num=num,price=price,amount=amount)
     else:
         return redirect('/sign')
     
