@@ -162,8 +162,9 @@
 				justify-content: space-around;
 				width:100%;
 				margin-top:-100px;
+				margin-left: 20px;
 				z-index: 10000;
-				background-color: rgb(18, 18, 18);
+				background-color: #2c3e50;
 			}
 			.investment_container :nth-child(1){
 				flex: 2;
@@ -173,6 +174,24 @@
 				display: flex;
 				justify-content: flex-start;
 				align-items: center;
+			}
+			/* 테이블 스타일 추가 */
+			.dataframe {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 20px;
+			}
+			.dataframe th, .dataframe td {
+				border: 1px solid #ecf0f1;
+				padding: 8px;
+				text-align: left;
+			}
+			.dataframe th {
+				background-color: #34495e;
+				color: #ecf0f1;
+			}
+			.dataframe tr:nth-child(even) {
+				background-color: #2c3e50;
 			}
 		</style>
 	</head>
@@ -268,35 +287,18 @@
 						<h2>보유 주식 개수</h2>
 						<p>{{amount}}주</p>
 					</div>
-					<div class="investment_container_content">
-						<table>
-							<tr>
-								<th>날짜</th>
-								<td>20241024</td>
-								<td>20241024</td>
-								<td>20241024</td>
-							</tr>
-							<tr>
-								<th>거래</th>
-								<td>구매</td>
-								<td>구매</td>
-								<td>판매</td>
-							</tr>
-							<tr>
-								<th>주</th>
-								<td>4주</td>
-								<td>3주</td>
-								<td>1주</td>
-							</tr>
-							<tr>
-								<th>가격</th>
-								<td>2000</td>
-								<td>34242</td>
-								<td>30000</td>
-							</tr>
-						</table>
-					</div>
 					
+    <!-- own_df가 비어 있지 않을 때의 처리 -->
+
+    <!-- own_df가 비어 있을 때의 처리 -->
+
+					{% if not own_df_empty %}
+					<div class="investment_container_content">
+						{{own_table | safe}}  <!-- own_table을 안전하게 출력 -->
+					</div>
+					{% else %}
+					<a>구매한 주식이 없습니다.</a>
+					{% endif %}
 				</div>
 			</div>
 		</div>

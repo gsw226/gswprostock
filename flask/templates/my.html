@@ -41,14 +41,8 @@
         <h2>my page</h2>
         <div class="container">
             <form action="/my" action="POST">
-                <input type="checkbox" name="auto" value="auto">auto</input>
-                <br/>
-                <br/>
-                <input type="checkbox" name="offensive" value="offensive">offensive</input>
-                <br/>
-                <input type="checkbox" name="balance" value="balance">balance</input>
-                <br/>
-                <input type="checkbox" name="defend" value="defend">defend</input>
+                <input type="number" name="number" placeholder="구매할 주식 수량" required min="1" max="999999999">
+                <button type="submit">submit</button>
             </form>
             <br/>
             <a href="/my/check"><button>Personal information</button></a>

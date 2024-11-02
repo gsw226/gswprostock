@@ -63,9 +63,9 @@
         <h1>{{ stock_name }} 판매</h1>
         <form action="/sell/{{ num }}" method="POST">
             <input type="hidden" name="stock_name" value="sell">
-            <input type="number" name="number" placeholder="판매할 주식 수량" required/>
+            <input type="number" name="number" placeholder="판매할 주식 수량" required min="1" max="999999999"/>
             <input type="submit" value="판매">
         </form>
-        <a href="/"><button>홈으로 가기</button></a>
+        <a href="/chart/{{num}}"><button>홈으로 가기</button></a>
     </body>
 </html>
