@@ -159,35 +159,31 @@ def buy(num):
             
             # 수정된 부분: or 대신 | 사용
             filtered_df = close_df[(close_df['한글 종목약명'] == stock_name) | (close_df['한글 종목명'] == stock_name)]
-            
-            # Check if filtered_df is empty before accessing its elements
+            print(filtered_df['어제종가'].iloc[0])
+            price= filtered_df['어제종가'].iloc[0]
+            # filtered_df가 비어있지 않은지 확인
             if not filtered_df.empty:
-                price = filtered_df['어제종가'].iloc[0]
-            else:
-                print("해당 주식이 없습니다.")  # Handle the case where no stock matches
-                return render_template('error.html', message="해당 주식이 없습니다.")  # Redirect to an error page or handle accordingly
-            
-            if buy == 'buy':
-                print("구매")
-                user_account = User.query.filter_by(email=uid).first().account
-                print(user_account)
-                total_price = float(price) * float(number)
-                existing_amount = own.query.filter_by(email=uid, stock_name=stock_name).order_by(own.id.asc()).first()
-                if existing_amount:
-                    amount = existing_amount.amount
-                    print(amount)
-                else:
-                    amount = 0
-                if user_account > total_price:
-                    total_amount = int(amount)+int(number)
-                    new_own = own(email=uid, stock_name=stock_name, date_time=datetime.now().strftime('%Y%m%d'), buy_sell='buy', many=number, price=price, amount=total_amount)
-                    db.session.add(new_own)
-                    db.session.commit()
-                    user = User.query.filter_by(email=uid).first()
-                    user.account = user_account - total_price                        
-                    db.session.commit()
-                else:
-                    print('자금이 부족합니다.')
+                if buy == 'buy':
+                    print("구매")
+                    user_account = User.query.filter_by(email=uid).first().account
+                    print(user_account)
+                    total_price = float(price) * float(number)
+                    existing_amount = own.query.filter_by(email=uid, stock_name=stock_name).order_by(own.id.desc()).first()
+                    if existing_amount:
+                        amount = existing_amount.amount
+                        print(amount)
+                    else:
+                        amount = 0
+                    if user_account > total_price:
+                        total_amount = int(amount)+int(number)
+                        new_own = own(email=uid, stock_name=stock_name, date_time=datetime.now().strftime('%Y%m%d'), buy_sell='buy', many=number, price=price, amount=total_amount)
+                        db.session.add(new_own)
+                        db.session.commit()
+                        user = User.query.filter_by(email=uid).first()
+                        user.account = user_account - total_price                        
+                        db.session.commit()
+                    else:
+                        print('자금이 부족합니다.')
             else:
                 print("해당 주식이 없습니다.")  # 주식이 없는 경우 처리
             
@@ -224,7 +220,7 @@ def sell(num):
                     user_account = User.query.filter_by(email=uid).first().account
                     print(user_account)
                     total_price = float(price) * float(number)
-                    existing_amount = own.query.filter_by(email=uid, stock_name=stock_name).order_by(own.id.asc()).first()
+                    existing_amount = own.query.filter_by(email=uid, stock_name=stock_name).order_by(own.id.desc()).first()
                     if existing_amount:
                         amount = existing_amount.amount
                     else:
@@ -402,7 +398,7 @@ def a(num):
                     }
                     for index, row in sort_df.iterrows()
                 ]
-                # 그래프에 추가할 데이터 리스트
+                # 그래프에 추가할 데이��� 리스트
                 all_data = {
                     'candlestick': candlestick_data,
                     'sma5': sma5_data,
@@ -443,7 +439,7 @@ def a(num):
 
                 # Check if own_df is empty before dropping columns
                 if not own_df.empty:
-                    own_df.drop(columns=[own_df.columns[1]], inplace=True)
+                    own_df.drop(columns=[own_df.columns[0],own_df.columns[1]], inplace=True)
                 else:
                     print("own_df가 비어 있습니다.")  # Handle the empty DataFrame case
                     # You can choose to render an error message or handle it as needed

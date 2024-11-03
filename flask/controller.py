@@ -55,7 +55,7 @@ def name_to_code(stock_name):
 def code_to_name(stock_code):
     #stock_code = str(stock_code).zfill(6)  # 6자리 형식으로 문자열로 변환
 
-    ticker_list = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock_data.csv')
+    ticker_list = pd.read_csv('./stock_data.csv')
     ticker_list = ticker_list.rename(columns={'단축코드': 'code', '한글 종목명': 'name', '한글 종목약명': 'short_name'})
 
     matching_row = ticker_list[ticker_list['code'] == stock_code]
