@@ -1,0 +1,6 @@
+flask/instace
+flask/migrations
+flask/gsw226.pem
+env/*
+.DS_Store
+.vscode

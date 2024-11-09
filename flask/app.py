@@ -257,7 +257,7 @@ def a(num):
     close_df = pd.read_csv('stock_data.csv')
     close_df.drop(close_df.columns[3], axis=1, inplace=True)
 
-    existing_amount = own.query.filter_by(email=uid, stock_name=stock_name).order_by(own.date_time.desc()).first()
+    existing_amount = own.query.filter_by(email=uid, stock_name=stock_name).order_by(own.id.desc()).first()
     if existing_amount:
         amount = existing_amount.amount
     else:
