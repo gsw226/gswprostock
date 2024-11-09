@@ -4,3 +4,4 @@ flask/gsw226.pem
 env/*
 .DS_Store
 .vscode
+flask/instance/test.db
