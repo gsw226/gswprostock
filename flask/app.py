@@ -102,7 +102,7 @@ def start_background_task():
 
 
 
-@app.route('/<int:stock_code>' ,methods=['POST','GET'])
+@app.route('/<stock_code>', methods=['POST', 'GET'])
 def index(stock_code):
     uid = session.get('uid','')
     #즐겨찾는 종목처리를 일로넘김
