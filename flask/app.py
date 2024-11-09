@@ -102,8 +102,8 @@ def start_background_task():
 
 
 
-@app.route('/' ,methods=['POST','GET'])
-def index():
+@app.route('/<int:stock_code>' ,methods=['POST','GET'])
+def index(stock_code):
     uid = session.get('uid','')
     #즐겨찾는 종목처리를 일로넘김
     if uid == None:
@@ -115,8 +115,7 @@ def index():
     stock_lst = stock_lst[-3:]  # 가장 밑에 있는 3개
     stock_lst = stock_lst + [0] * (3 - len(stock_lst))  # 기본값으로 0을 추가
     print('result')
-    stock_number = "005930"
-    url = "/chart/"+stock_number
+    url = "/chart/"+stock_code
     if request.method == 'POST':
         stock_name = request.form.get('stock_name')
         num = name_to_code(stock_name=stock_name)
@@ -187,7 +186,7 @@ def buy(num):
             else:
                 print("해당 주식이 없습니다.")  # 주식이 없는 경우 처리
             
-        return redirect('/')
+        return redirect('/'+num)
     
     print('33')
     # GET 요청 처리
