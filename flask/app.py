@@ -103,7 +103,8 @@ def start_background_task():
 
 
 @app.route('/<stock_code>', methods=['POST', 'GET'])
-def index(stock_code):
+@app.route('/', methods=['POST', 'GET'])
+def index(stock_code=None):
     uid = session.get('uid','')
     #즐겨찾는 종목처리를 일로넘김
     if uid == None:
@@ -397,7 +398,7 @@ def a(num):
                     }
                     for index, row in sort_df.iterrows()
                 ]
-                # 그래프에 추가할 데이��� 리스트
+                # 그래프에 추가할 데이터 리스트
                 all_data = {
                     'candlestick': candlestick_data,
                     'sma5': sma5_data,
