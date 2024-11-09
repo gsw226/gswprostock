@@ -2,8 +2,8 @@ flask/instace
 flask/migrations
 flask/gsw226.pem
 env/*
+env
 .DS_Store
 **.DS_Store
 .vscode
 flask/instance/test.db
-env
