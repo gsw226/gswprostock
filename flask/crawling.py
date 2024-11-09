@@ -48,7 +48,7 @@ def get_yesterday_close(tickers):
     return close_prices
 
 # CSV 파일에서 데이터 읽기
-csv_df = pd.read_csv('/Users/gangsang-u/Documents/GitHub/gsw226-s_file/flask/stock.csv')
+csv_df = pd.read_csv('./stock.csv')
 
 # 단축코드 열을 수정 (inplace=True로 설정)
 csv_df['단축코드'] = csv_df['단축코드'].apply(stock_name_to_code)
