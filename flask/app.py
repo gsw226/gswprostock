@@ -237,7 +237,7 @@ def sell(num):
             else:
                 print("해당 주식이 없습니다.")  # 주식이 없는 경우 처리
             
-        return redirect('/')
+        return redirect('/'+num)
     
     print('33')
     # GET 요청 처리
