@@ -116,7 +116,11 @@ def index(stock_code=None):
     stock_lst = stock_lst[-3:]  # 가장 밑에 있는 3개
     stock_lst = stock_lst + [0] * (3 - len(stock_lst))  # 기본값으로 0을 추가
     print('result')
-    url = "/chart/"+stock_code
+    url = "/login"
+    if stock_code is None:
+        url = "/chart/005930"
+    else:
+        url = "/chart/"+stock_code
     if request.method == 'POST':
         stock_name = request.form.get('stock_name')
         num = name_to_code(stock_name=stock_name)
