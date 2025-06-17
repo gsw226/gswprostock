@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use('Agg')  # Use Agg backend for matplotlib
+matplotlib.use('Agg')
 
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request, session, redirect
@@ -59,25 +59,21 @@ class own(db.Model):
 with app.app_context():
     db.create_all()
 
-# Define the function to be executed via subprocess and log output in real-time
+
 def my_scheduled_function():
     print("Executing crawling.py at 15:00")
     
-    # Use subprocess to run crawling.py and log output in real-time
+    
     command = ['python', 'crawling.py']
     try:
-        # Use Popen to allow real-time logging
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        # Continuously read stdout and stderr in real-time
         for line in process.stdout:
-            print(line, end="")  # Print each line to the console in real-time
+            print(line, end="")
         
-        # Read and print any errors
         for error_line in process.stderr:
             print("Error:", error_line, end="")
 
-        # Wait for the process to finish
         process.wait()
         print("crawling.py completed with return code", process.returncode)
 
@@ -193,7 +189,7 @@ def buy(num):
             
         return redirect('/'+num)
     
-    print('33')
+    # print('33')
     # GET 요청 처리
     return render_template('buy.html', stock_name=stock_name, num=num)  # GET 요청 시 buy.html 템플릿을 렌더링
      
